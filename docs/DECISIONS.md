@@ -413,3 +413,27 @@ validan en el servicio con mensajes claros y, de nuevo, en los triggers de la ba
 Un movimiento rechazado muestra «Movimiento no permitido» y recarga el árbol para
 restaurar el estado real.
 
+---
+
+## D-029 — El valor predeterminado es documentación tipada, no el valor del perfil
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+El formulario de parámetro edita el valor predeterminado con un control propio de su
+tipo: entero y decimal se parsean a número, booleano a `true`/`false` reales, enum se
+elige de `allowed_values` y JSON se valida con `JSON.parse`. Vacío significa
+**desconocido** (null) y fuerza procedencia `unknown`; con valor, la procedencia es
+obligatoria y distinta de `unknown`. Duplicar un parámetro siempre pide confirmación y
+la copia se crea **sin clave técnica** para no chocar con el índice único
+`(node_id, key)`; eliminar solo se permite si no hay valores de perfil (la base
+responde `23503` y la UI propone desactivar).
+
+**Motivo:** la tarea exige tipos correctamente representados y una separación
+comprobable entre valor predeterminado y valor de configuración; inventar valores o
+guardar «1» como texto rompería los filtros y la futura comparación de perfiles.
+
+**Consecuencia:** `ParameterFormDialog` + `features/parameters/validation.ts` son el
+único camino de escritura de `parameters`. Los servicios de perfiles (Etapa 9) solo
+tocan `configuration_values`. Verificado con E2E: tras guardar 20 en un perfil, el
+predeterminado sigue siendo 12.
+

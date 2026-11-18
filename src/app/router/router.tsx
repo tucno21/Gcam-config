@@ -7,6 +7,7 @@ import { ConfigurationsPage } from '../../features/configurations/pages/Configur
 import { ExperimentsPage } from '../../features/experiments/pages/ExperimentsPage'
 import { HistoryPage } from '../../features/history/pages/HistoryPage'
 import { AssistantPage } from '../../features/assistant/pages/AssistantPage'
+import { ParameterPage } from '../../features/parameters/pages/ParameterPage'
 import { LoginPage } from '../../features/auth/pages/LoginPage'
 import { HomePage } from '../../pages/HomePage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
               { path: 'cameras/:cameraId', element: <CameraPage /> },
               { path: 'cameras/:cameraId/versions/:versionId', element: <VersionOverviewPage /> },
               { path: 'cameras/:cameraId/versions/:versionId/hierarchy', element: <HierarchyPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/parameters/:parameterId', element: <ParameterPage /> },
               { path: 'cameras/:cameraId/versions/:versionId/configurations', element: <ConfigurationsPage /> },
               { path: 'cameras/:cameraId/versions/:versionId/experiments', element: <ExperimentsPage /> },
               { path: 'cameras/:cameraId/versions/:versionId/history', element: <HistoryPage /> },

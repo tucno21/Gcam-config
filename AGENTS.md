@@ -310,6 +310,15 @@ Una etapa está terminada cuando:
   al navegar por el módulo (Zustand). Verificado con E2E real: árbol, búsqueda, drag
   dentro, ciclo bloqueado con mensaje, reordenamiento de raíces, eliminación con
   advertencia, cero errores de consola y base limpia.
+- **Etapa 8** — parámetros: completada. CRUD por nodo con formulario tipado (entero,
+  decimal, booleano, texto, enum y JSON), valor predeterminado con procedencia,
+  certeza, unidad, opciones, orden y estado; clave única por nodo con error legible;
+  duplicado confirmado y sin clave; desactivar en lugar de borrar cuando hay perfiles;
+  ficha con ruta jerárquica, cámara/versión, definición y huecos explícitos para valor
+  de configuración (Etapa 09) e historial (Etapa 10). Verificado con E2E: tipos,
+  validación decimal, clave duplicada, duplicado, desactivación, edición, ficha,
+  borrado seguro y separación predeterminado/perfil (12 sigue siendo 12 con un 20 en
+  el perfil).
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario

@@ -29,6 +29,7 @@ import { useWorkspaceSelection } from '../../../hooks/useWorkspaceSelection'
 import { useWorkspaceStore } from '../../../stores/useWorkspaceStore'
 import { toAppError } from '../../../lib/errors/AppError'
 import { nodeService } from '../../../services/nodeService'
+import { parameterService } from '../../../services/parameterService'
 import type { ParameterNode } from '../../../services/types'
 import { NodeDetailPanel } from '../components/NodeDetailPanel'
 import { NodeFormDialog } from '../components/NodeFormDialog'
@@ -72,6 +73,25 @@ export const HierarchyPage = () => {
     if (!versionId) throw new Error('No se indicó la versión.')
     return nodeService.listByVersion(versionId)
   }, `tree|${versionId}`)
+
+  const parametersQuery = useAsyncData(() => {
+    if (!versionId) throw new Error('No se indicó la versión.')
+    return parameterService.listByVersion(versionId)
+  }, `parameters|${versionId}`)
+
+  const parameters = parametersQuery.status === 'success' ? (parametersQuery.data ?? []) : []
+  const parametersByNode = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const parameter of parametersQuery.data ?? []) {
+      counts.set(parameter.nodeId, (counts.get(parameter.nodeId) ?? 0) + 1)
+    }
+    return counts
+  }, [parametersQuery.data])
+
+  const reloadAll = () => {
+    reload()
+    parametersQuery.reload()
+  }
 
   const truncated = data?.truncated ?? false
   const index = useMemo(() => buildTreeIndex(data?.items ?? []), [data])
@@ -326,6 +346,7 @@ export const HierarchyPage = () => {
                       searchTerm={searchTerm}
                       selectedNodeId={selectedNodeId}
                       dragging={dragging}
+                      parameterCount={parametersByNode.get(node.id) ?? 0}
                       onToggle={toggleExpanded}
                       onSelect={handleSelect}
                       onAddChild={(parent) => setDialog({ mode: 'create', parent })}
@@ -350,9 +371,11 @@ export const HierarchyPage = () => {
           <NodeDetailPanel
             index={index}
             node={selected}
+            parameters={parameters.filter((parameter) => parameter.nodeId === selected.id)}
             onAddChild={(parent) => setDialog({ mode: 'create', parent })}
             onEdit={(nodeToEdit) => setDialog({ mode: 'edit', node: nodeToEdit })}
             onDelete={(nodeToDelete) => void openDelete(nodeToDelete)}
+            onParametersChanged={reloadAll}
           />
         ) : (
           <Panel title="Detalle del nodo" description="Selecciona un nodo del árbol para ver su detalle.">
@@ -418,6 +441,7 @@ const VisibleNodeRow = ({
   searchTerm,
   selectedNodeId,
   dragging,
+  parameterCount,
   onToggle,
   onSelect,
   onAddChild,
@@ -431,6 +455,7 @@ const VisibleNodeRow = ({
   searchTerm: string
   selectedNodeId: string | null
   dragging: ParameterNode | null
+  parameterCount: number
   onToggle: (nodeId: string) => void
   onSelect: (node: ParameterNode) => void
   onAddChild: (node: ParameterNode) => void
@@ -459,7 +484,7 @@ const VisibleNodeRow = ({
       expanded={expanded}
       hasChildren={children.length > 0}
       childCount={children.length}
-      parameterCount={0}
+      parameterCount={parameterCount}
       selected={selectedNodeId === node.id}
       dropZone={activeZone}
       isDragging={isDragging || dragging?.id === node.id}
