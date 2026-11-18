@@ -11,8 +11,8 @@ export const NotFoundPage = () => {
       <p className="mt-2 max-w-md text-sm leading-relaxed text-ink-muted text-pretty">
         La dirección que abriste no corresponde a ninguna vista del laboratorio.
       </p>
-      <ButtonLink to="/" variant="primary" className="mt-6">
-        Volver al inicio
+      <ButtonLink to="/cameras" variant="primary" className="mt-6">
+        Ir a Mis cámaras
       </ButtonLink>
     </div>
   )

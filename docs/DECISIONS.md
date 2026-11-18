@@ -703,3 +703,37 @@ poder eliminar una cámara con datos se añadió la función
 (`owner_id = auth.uid()`) y borra en orden hijos-primero. Un usuario ajeno recibe
 `42501`; `anon` no puede ejecutarla. Es el único camino que elimina historial.
 
+---
+
+## D-039 — Interfaz de una sola vista: barra superior y cámaras en tarjetas
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+**Qué.** Se retira la vista «Inicio» y el menú lateral. La aplicación tiene una
+**barra superior** fija con la marca, el correo de la sesión y «Cerrar sesión», y un
+contenido centrado. `/` redirige a `/cameras`. El catálogo muestra cada cámara como
+una **tarjeta** (nombre, slug, descripción y acciones) que se abre al pulsarla.
+
+**Por qué.** Con una sola sección real, un menú de un solo enlace ocupaba 256 px en
+escritorio y un cajón en móvil sin aportar nada; la vista de inicio era texto
+explicativo que no se usaba a diario. La tarjeta hace visible de un vistazo qué
+cámara se abre y concentra sus acciones.
+
+**Implicaciones.**
+
+- La barra no lista secciones: «Mis cámaras» es el punto de entrada y las cámaras se
+  abren desde su tarjeta. Los breadcrumbs de la cámara siguen indicando la vuelta.
+- Los botones de solo icono usan el componente `Tooltip` (`components/common`):
+  globo con el verbo de la acción al pasar el ratón o al enfocar con el teclado,
+  además del `aria-label` obligatorio.
+- Las acciones de un nivel o de un parámetro viven en un **menú de tres puntos**
+  (`ActionMenu`), no en una fila de iconos: el nombre del ajuste ocupa el ancho
+  principal de la fila.
+- **Sin pestañas.** La ruta interna (`Ajustes › nivel › …`) se muestra como segunda
+  línea de migas, justo debajo de «Mis cámaras › cámara», y hace de navegación de
+  vuelta (cada ancestro es un enlace). El historial de la cámara se abre con el
+  icono de reloj de la raíz.
+- Se eliminan `pages/HomePage.tsx`, `Sidebar`, `MobileNav`, `MobileTopbar`,
+  `NavLinks`, `constants/navigation.ts` y `useUiStore` (solo existía para el cajón).
+- No se toca el esquema ni la API: es un cambio exclusivamente de interfaz.
+

@@ -94,7 +94,7 @@ export const LoginPage = () => {
           </h1>
           <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
             {mode === 'signIn'
-              ? 'Inicia sesión para ver tus cámaras, versiones y configuraciones.'
+              ? 'Inicia sesión para ver tus cámaras y sus ajustes.'
               : 'La cuenta solo sirve para aislar tus datos: nada se comparte con otros usuarios.'}
           </p>
 

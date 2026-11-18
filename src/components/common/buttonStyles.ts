@@ -1,7 +1,7 @@
 import { cn } from '../../lib/helpers/cn'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
-export type ButtonSize = 'sm' | 'md'
+export type ButtonSize = 'xs' | 'sm' | 'md'
 
 export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'border border-transparent bg-accent text-accent-ink hover:bg-accent-strong',
@@ -11,6 +11,7 @@ export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
 }
 
 export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
+  xs: 'h-8 gap-1.5 px-2.5 text-xs',
   sm: 'h-9 gap-1.5 px-3 text-[13px]',
   md: 'h-10 gap-2 px-4 text-sm',
 }

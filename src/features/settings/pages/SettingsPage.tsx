@@ -1,14 +1,13 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { FolderPlus, Network, Plus, SlidersHorizontal } from 'lucide-react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { FolderPlus, History, Network, Plus, SlidersHorizontal } from 'lucide-react'
 import { Button } from '../../../components/common/Button'
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog'
-import { Panel } from '../../../components/common/Panel'
+import { Tooltip } from '../../../components/common/Tooltip'
 import { EmptyState } from '../../../components/feedback/EmptyState'
 import { ErrorState } from '../../../components/feedback/ErrorState'
 import { Spinner } from '../../../components/feedback/Spinner'
 import { useToast } from '../../../components/feedback/ToastContext'
-import { Breadcrumbs } from '../../../components/layout/Breadcrumbs'
 import { Input } from '../../../components/forms/Input'
 import { useAsyncData } from '../../../hooks/useAsyncData'
 import { useWorkspaceSelection } from '../../../hooks/useWorkspaceSelection'
@@ -75,10 +74,6 @@ export const SettingsPage = () => {
 
   const current = nodeId ? (index.nodeById.get(nodeId) ?? null) : null
   const currentId = current?.id ?? null
-  const path = useMemo(
-    () => [...ancestorsOf(index, currentId).map((node) => node.name), ...(current ? [current.name] : [])],
-    [index, currentId, current],
-  )
 
   const [search, setSearch] = useState('')
   const [showRetired, setShowRetired] = useState(false)
@@ -231,42 +226,68 @@ export const SettingsPage = () => {
   const hasError =
     structureQuery.status === 'error' || nodesQuery.status === 'error' || parametersQuery.status === 'error'
 
-  const canAddParameter = current !== null
-
-  const actions = (
+  const actions = current ? (
     <div className="flex flex-wrap items-center gap-2">
       <Button
         size="sm"
-        leadingIcon={<FolderPlus aria-hidden="true" className="size-4" />}
-        onClick={() =>
-          current
-            ? setLevelDialog({ mode: 'create', parent: current })
-            : setLevelDialog({ mode: 'create', parent: null })
-        }
+        className="max-sm:h-8 max-sm:gap-1 max-sm:px-2 max-sm:text-xs"
+        leadingIcon={<FolderPlus aria-hidden="true" className="size-4 max-sm:size-3.5" />}
+        onClick={() => setLevelDialog({ mode: 'create', parent: current })}
       >
-        {current ? 'Añadir subnivel' : 'Añadir nivel'}
+        <span className="sm:hidden">Subnivel</span>
+        <span className="hidden sm:inline">Añadir subnivel</span>
       </Button>
-      {canAddParameter && (
-        <Button
-          size="sm"
-          variant="primary"
-          leadingIcon={<Plus aria-hidden="true" className="size-4" />}
-          onClick={() => setParameterDialog({ mode: 'create' })}
-        >
-          Añadir parámetro
-        </Button>
-      )}
+      <Button
+        size="sm"
+        variant="primary"
+        className="max-sm:h-8 max-sm:gap-1 max-sm:px-2 max-sm:text-xs"
+        leadingIcon={<Plus aria-hidden="true" className="size-4 max-sm:size-3.5" />}
+        onClick={() => setParameterDialog({ mode: 'create' })}
+      >
+        <span className="sm:hidden">Parámetro</span>
+        <span className="hidden sm:inline">Añadir parámetro</span>
+      </Button>
     </div>
+  ) : (
+    <>
+      <Tooltip label="Historial de la cámara">
+        <Link
+          to={`${base}/history`}
+          aria-label="Ver historial de la cámara"
+          className="inline-flex size-9 shrink-0 items-center justify-center rounded-control text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          <History aria-hidden="true" className="size-4" />
+        </Link>
+      </Tooltip>
+      <Button
+        size="sm"
+        variant="primary"
+        leadingIcon={<FolderPlus aria-hidden="true" className="size-4" />}
+        onClick={() => setLevelDialog({ mode: 'create', parent: null })}
+      >
+        Añadir nivel
+      </Button>
+    </>
   )
 
   return (
     <CameraSection
       title={current?.name ?? 'Ajustes'}
-      description={
-        current?.description ??
-        'Réplica de los ajustes del teléfono: crea un nivel por pantalla y añade dentro sus parámetros con el valor actual.'
+      description={current?.description ?? undefined}
+      trail={
+        current
+          ? [
+              { label: 'Ajustes', to: base },
+              ...ancestorsOf(index, current.id).map((ancestor) => ({
+                label: ancestor.name,
+                to: `${settingsBase}/${ancestor.id}`,
+              })),
+              { label: current.name },
+            ]
+          : undefined
       }
       actions={actions}
+      actionsInline={!current}
     >
       {isLoading && (
         <div className="flex items-center gap-2 px-1 py-6 text-sm text-ink-muted" role="status">
@@ -287,40 +308,24 @@ export const SettingsPage = () => {
 
       {!isLoading && !hasError && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Breadcrumbs
-              items={[
-                { label: 'Ajustes', to: base },
-                ...(current
-                  ? [
-                      ...ancestorsOf(index, current.id).map((ancestor) => ({
-                        label: ancestor.name,
-                        to: `${settingsBase}/${ancestor.id}`,
-                      })),
-                      { label: current.name },
-                    ]
-                  : []),
-              ]}
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-xs text-ink-muted">
-                <input
-                  type="checkbox"
-                  className="size-3.5 accent-[var(--color-accent)]"
-                  checked={showRetired}
-                  onChange={(event) => setShowRetired(event.target.checked)}
-                />
-                Mostrar retirados
-              </label>
-              <Input
-                type="search"
-                value={search}
-                aria-label="Buscar en este nivel"
-                placeholder="Buscar en este nivel…"
-                className="w-full sm:w-56"
-                onChange={(event) => setSearch(event.target.value)}
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-xs text-ink-muted">
+              <input
+                type="checkbox"
+                className="size-3.5 accent-[var(--color-accent)]"
+                checked={showRetired}
+                onChange={(event) => setShowRetired(event.target.checked)}
               />
-            </div>
+              Mostrar retirados
+            </label>
+            <Input
+              type="search"
+              value={search}
+              aria-label="Buscar en este nivel"
+              placeholder="Buscar en este nivel…"
+              className="min-w-0 flex-1 sm:w-56 sm:flex-none"
+              onChange={(event) => setSearch(event.target.value)}
+            />
           </div>
 
           {nodeId && !current && (
@@ -347,36 +352,10 @@ export const SettingsPage = () => {
                 />
               )}
 
-              {current && (
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-panel border border-line bg-surface-sunken px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="ui-label">Estás en</p>
-                    <p className="mt-0.5 truncate text-[13px] text-ink">{path.join(' › ') || current.name}</p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button size="sm" onClick={() => setLevelDialog({ mode: 'edit', level: current })}>
-                      Editar nivel
-                    </Button>
-                    <Button size="sm" onClick={() => void duplicateLevel(current)}>
-                      Duplicar nivel
-                    </Button>
-                    <Button size="sm" onClick={() => void toggleLevel(current)}>
-                      {current.isActive ? 'Retirar nivel' : 'Reactivar nivel'}
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={() => void openDeleteLevel(current)}>
-                      Eliminar nivel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
               {levels.length > 0 && (
-                <Panel
-                  title="Niveles"
-                  description="Pantallas dentro de este nivel. Entra para ver o añadir sus parámetros."
-                  flush
-                >
-                  <ul>
+                <section aria-label="Niveles">
+                  <p className="ui-label mb-2 px-1">Niveles · {levels.length}</p>
+                  <ul className="rounded-panel border border-line bg-surface">
                     {levels.map((node) => (
                       <LevelRow
                         key={node.id}
@@ -391,16 +370,13 @@ export const SettingsPage = () => {
                       />
                     ))}
                   </ul>
-                </Panel>
+                </section>
               )}
 
               {current && levelParameters.length > 0 && (
-                <Panel
-                  title="Parámetros"
-                  description="Pulsa el valor para cambiarlo: el historial guarda el antes, el después, tu comentario y el efecto."
-                  flush
-                >
-                  <ul>
+                <section aria-label="Parámetros">
+                  <p className="ui-label mb-2 px-1">Parámetros · {levelParameters.length}</p>
+                  <ul className="rounded-panel border border-line bg-surface">
                     {levelParameters.map((parameter) => (
                       <ParameterRow
                         key={parameter.id}
@@ -414,7 +390,7 @@ export const SettingsPage = () => {
                       />
                     ))}
                   </ul>
-                </Panel>
+                </section>
               )}
 
               {current && levels.length === 0 && levelParameters.length === 0 && (
@@ -549,4 +525,5 @@ export const SettingsPage = () => {
     </CameraSection>
   )
 }
+
 

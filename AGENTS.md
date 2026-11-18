@@ -432,6 +432,9 @@ Una etapa está terminada cuando:
   headless, sin errores de consola), con round-trip de exportación/importación y RLS
   del historial (dueño permitido, usuario ajeno `42501`, `anon` `42501`); `npm test`
   en 46.
+- **Interfaz de una sola vista** (D-039): sin «Inicio» ni menú lateral; `/` redirige a
+  `/cameras`, la barra superior tiene marca, sesión y salida, y cada cámara es una
+  tarjeta con acciones y globo de ayuda. Sin cambios de esquema ni de API.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **6 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025), la marca `applied_to_profile`

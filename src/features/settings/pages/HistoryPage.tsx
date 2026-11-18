@@ -77,6 +77,10 @@ export const HistoryPage = () => {
     <CameraSection
       title="Historial"
       description="Todo cambio de valor queda aquí con su antes, después, comentario y efecto. No se edita ni se borra."
+      trail={[
+        { label: 'Ajustes', to: `/cameras/${cameraId ?? ''}` },
+        { label: 'Historial' },
+      ]}
     >
       {query.status === 'loading' && (
         <div className="flex items-center gap-2 px-1 py-6 text-sm text-ink-muted" role="status">

@@ -1,11 +1,24 @@
 import { useState } from 'react'
-import { Archive, ArchiveRestore, Camera as CameraIcon, Copy, Download, Pencil, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
+import {
+  Archive,
+  ArchiveRestore,
+  ArrowUpRight,
+  Camera as CameraIcon,
+  Copy,
+  Download,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/common/Badge'
 import { Button } from '../../../components/common/Button'
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog'
 import { IconButton } from '../../../components/common/IconButton'
-import { Panel } from '../../../components/common/Panel'
 import { EmptyState } from '../../../components/feedback/EmptyState'
 import { ErrorState } from '../../../components/feedback/ErrorState'
 import { Spinner } from '../../../components/feedback/Spinner'
@@ -32,7 +45,7 @@ const STATUS_OPTIONS: Array<{ value: ActiveFilter; label: string }> = [
 
 const PAGE_SIZE = 25
 
-/** Catálogo principal: CRUD completo con búsqueda, filtros y estados obligatorios. */
+/** Catálogo principal: cada cámara es una tarjeta que abre sus ajustes. */
 export const CamerasPage = () => {
   const { notify } = useToast()
 
@@ -143,32 +156,35 @@ export const CamerasPage = () => {
     <>
       <PageHeader
         title="Mis cámaras"
-        description="LMC, AGC, BSG o cualquier otra modificación de GCam. Son registros de datos: la aplicación no impone nombres ni estructura."
-        breadcrumbs={[{ label: 'Inicio', to: '/' }, { label: 'Mis cámaras' }]}
+        description="Cada cámara guarda sus propios niveles y parámetros. Abre una tarjeta para ver o cambiar sus ajustes."
         actions={
-          <>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <Button
               size="sm"
-              leadingIcon={<RefreshCw aria-hidden="true" className="size-4" />}
+              className="flex-1 sm:flex-none"
+              leadingIcon={<RefreshCw aria-hidden="true" className="size-4 max-[359px]:hidden" />}
               onClick={reload}
             >
               Actualizar
             </Button>
             <Button
               size="sm"
-              leadingIcon={<Upload aria-hidden="true" className="size-4" />}
+              className="flex-1 sm:flex-none"
+              leadingIcon={<Upload aria-hidden="true" className="size-4 max-[359px]:hidden" />}
               onClick={() => setImportOpen(true)}
             >
               Importar
             </Button>
             <Button
               variant="primary"
-              leadingIcon={<Plus aria-hidden="true" className="size-4" />}
+              className="flex-1 sm:flex-none"
+              leadingIcon={<Plus aria-hidden="true" className="size-4 max-[359px]:hidden" />}
               onClick={openCreate}
             >
-              Nueva cámara
+              <span className="sm:hidden">Nueva</span>
+              <span className="hidden sm:inline">Nueva cámara</span>
             </Button>
-          </>
+          </div>
         }
       />
 
@@ -201,7 +217,7 @@ export const CamerasPage = () => {
             ))}
           </Select>
           {hasFilters && (
-            <IconButton label="Limpiar búsqueda y filtros" onClick={clearFilters}>
+            <IconButton label="Limpiar búsqueda y filtros" hint="Limpiar filtros" onClick={clearFilters}>
               <X className="size-4" />
             </IconButton>
           )}
@@ -226,7 +242,7 @@ export const CamerasPage = () => {
           description={
             hasFilters
               ? 'Prueba con otro nombre, otro slug o cambia el filtro de estado.'
-              : 'Cada cámara tiene sus propios niveles y parámetros, sin mezclarse con las demás.'
+              : 'Crea la primera cámara y empieza a cargar sus niveles tal como aparecen en el teléfono.'
           }
           action={
             hasFilters ? (
@@ -246,79 +262,119 @@ export const CamerasPage = () => {
       )}
 
       {cameras.length > 0 && (
-        <Panel
-          title={`${total} ${total === 1 ? 'cámara' : 'cámaras'}`}
-          description="Ordenadas por nombre. Los datos se leen en vivo de Supabase."
-          action={
-            loadStatus === 'loading' ? (
+        <section aria-label="Cámaras">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-ink-faint">
+              {total} {total === 1 ? 'cámara' : 'cámaras'} · ordenadas por nombre
+            </p>
+            {loadStatus === 'loading' && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-faint" role="status">
                 <Spinner className="size-3" />
                 Actualizando
               </span>
-            ) : undefined
-          }
-          flush
-        >
-          <ul className="divide-y divide-line">
+            )}
+          </div>
+
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {cameras.map((camera) => (
-              <li key={camera.id} className="flex items-start gap-3 px-5 py-4 transition-colors duration-150 hover:bg-white/[0.02]">
-                <Link to={`/cameras/${camera.id}`} className="min-w-0 flex-1 rounded-control">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-ink">{camera.name}</span>
-                    <code className="rounded border border-line bg-surface-sunken px-1.5 py-0.5 font-mono text-[11px] text-ink-faint">
-                      {camera.slug}
-                    </code>
-                    {!camera.isActive && <Badge>Archivada</Badge>}
+              <li
+                key={camera.id}
+                className="group relative flex flex-col rounded-panel border border-line bg-surface p-4 transition-colors duration-150 hover:border-line-strong hover:bg-surface-raised/60"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-control border border-line bg-surface-sunken text-accent">
+                    <CameraIcon aria-hidden="true" className="size-5" strokeWidth={1.75} />
                   </span>
-                  {camera.description && (
-                    <span className="mt-1 block text-[13px] leading-relaxed text-ink-muted">
-                      {camera.description}
-                    </span>
-                  )}
-                  <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-disabled">
-                    {camera.developer && <span>Desarrollador: {camera.developer}</span>}
-                    <span>Abre sus ajustes para editar niveles</span>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <Link
+                        to={`/cameras/${camera.id}`}
+                        className="min-w-0 truncate rounded-sm text-sm font-medium text-ink transition-colors after:absolute after:inset-0 after:content-[''] group-hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        {camera.name}
+                      </Link>
+                      {!camera.isActive && <Badge tone="warning">Archivada</Badge>}
+                    </div>
+                    <code className="mt-1 block truncate font-mono text-[11px] text-ink-faint">{camera.slug}</code>
+                  </div>
+
+                  <ArrowUpRight
+                    aria-hidden="true"
+                    className="mt-0.5 size-4 shrink-0 text-ink-disabled transition-colors group-hover:text-accent"
+                  />
+                </div>
+
+                <p className="mt-3 line-clamp-2 min-h-10 text-[13px] leading-relaxed text-ink-muted">
+                  {camera.description || 'Sin descripción.'}
+                </p>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-ink-disabled">
+                    {camera.developer ? `Desarrollador: ${camera.developer}` : ''}
                   </span>
-                </Link>
-                <div className="flex shrink-0 items-center gap-1">
-                  <IconButton
-                    label={`Duplicar ${camera.name}`}
-                    title="Duplicar cámara con sus niveles y valores"
-                    onClick={() => setDuplicating(camera)}
-                  >
-                    <Copy className="size-4" />
-                  </IconButton>
-                  <IconButton
-                    label={`Exportar ${camera.name}`}
-                    disabled={exportingId === camera.id}
-                    onClick={() => void exportCamera(camera)}
-                  >
-                    <Download className="size-4" />
-                  </IconButton>
-                  <IconButton label={`Editar ${camera.name}`} onClick={() => openEdit(camera)}>
-                    <Pencil className="size-4" />
-                  </IconButton>
-                  <IconButton
-                    label={camera.isActive ? `Archivar ${camera.name}` : `Reactivar ${camera.name}`}
-                    onClick={() => void toggleActive(camera)}
-                  >
-                    {camera.isActive ? <Archive className="size-4" /> : <ArchiveRestore className="size-4" />}
-                  </IconButton>
-                  <IconButton label={`Eliminar ${camera.name}`} onClick={() => setDeleting(camera)}>
-                    <Trash2 className="size-4" />
-                  </IconButton>
+
+                  <div className="relative z-10 flex shrink-0 items-center gap-0.5">
+                    <IconButton
+                      size="sm"
+                      label={`Duplicar ${camera.name}`}
+                      hint="Duplicar cámara"
+                      onClick={() => setDuplicating(camera)}
+                    >
+                      <Copy aria-hidden="true" className="size-4" />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      label={`Exportar ${camera.name}`}
+                      hint="Exportar respaldo"
+                      disabled={exportingId === camera.id}
+                      onClick={() => void exportCamera(camera)}
+                    >
+                      <Download aria-hidden="true" className="size-4" />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      label={`Editar ${camera.name}`}
+                      hint="Editar datos"
+                      onClick={() => openEdit(camera)}
+                    >
+                      <Pencil aria-hidden="true" className="size-4" />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      label={camera.isActive ? `Archivar ${camera.name}` : `Reactivar ${camera.name}`}
+                      hint={camera.isActive ? 'Archivar cámara' : 'Reactivar cámara'}
+                      onClick={() => void toggleActive(camera)}
+                    >
+                      {camera.isActive ? (
+                        <Archive aria-hidden="true" className="size-4" />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" className="size-4" />
+                      )}
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      tone="danger"
+                      label={`Eliminar ${camera.name}`}
+                      hint="Eliminar cámara"
+                      onClick={() => setDeleting(camera)}
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </IconButton>
+                  </div>
                 </div>
               </li>
             ))}
           </ul>
+
           {canLoadMore && (
-            <div className="border-t border-line px-5 py-4">
+            <div className="mt-4">
               <Button size="sm" onClick={() => setLimit((current) => current + PAGE_SIZE)}>
                 Mostrar más (quedan {total - cameras.length})
               </Button>
             </div>
           )}
-        </Panel>
+        </section>
       )}
 
       <CameraFormDialog

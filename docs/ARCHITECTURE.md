@@ -66,13 +66,12 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/app/` | `AppShell`, providers y router | ✅ |
 | `src/app/router/` | rutas y guarda de sesión (`RequireSession`) | ✅ |
 | `src/features/auth/` | `AuthProvider`, `useAuth`, `/login` y validación de acceso | ✅ Etapa 4 |
-| `src/components/common/` | `Button`, `ButtonLink`, `IconButton`, `Badge`, `Panel`, `Dialog`, `ConfirmDialog` | ✅ |
-| `src/components/layout/` | shell, sidebar, topbar móvil, breadcrumbs, cabecera, pestañas | ✅ |
+| `src/components/common/` | `Button`, `ButtonLink`, `IconButton`, `Tooltip`, `ActionMenu`, `Badge`, `Panel`, `Dialog`, `ConfirmDialog` | ✅ |
+| `src/components/layout/` | barra superior (`AppShell`), breadcrumbs y cabecera de página | ✅ |
 | `src/components/feedback/` | `Spinner`, `EmptyState`, `ErrorState`, `PendingStage`, toasts | ✅ |
 | `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ |
-| `src/features/settings/` | espejo de ajustes: niveles, parámetros, valor con comentario, comparación por linaje, historial y `tree.ts` | ✅ Etapa 16 |
-| `src/features/cameras/` | catálogo real: página, `CameraFormDialog`, importación y validación del dominio | ✅ Etapa 13 |
-| `src/features/versions/` | versiones reales: formulario, duplicación con valores, ficha (resumen) | ✅ Etapa 6 |
+| `src/features/settings/` | espejo de ajustes: niveles, parámetros, valor con comentario, historial y `tree.ts` | ✅ Etapa 16 |
+| `src/features/cameras/` | catálogo en tarjetas: página, `CameraFormDialog`, duplicar, importación y validación del dominio | ✅ Etapa 16 |
 | `src/features/auth/` | `AuthProvider`, `useAuth`, `/login` y validación de acceso | ✅ Etapa 4 |
 | `src/hooks/` | `usePageTitle`, `useAsyncData`, `useWorkspaceSelection`, `useDebouncedValue` | ✅ |
 | `src/lib/helpers/` | funciones puras (`cn`, `shortId`, `slugify`, `formatDate`) | ✅ |
@@ -80,11 +79,11 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/lib/axios/` | instancia HTTP e interceptores | ✅ base (la usa la Etapa 11) |
 | `src/lib/errors/` | `AppError` y `toAppError` | ✅ Etapa 4 |
 | `src/lib/config/` | lectura de variables `VITE_*` | ✅ Etapa 4 |
-| `src/lib/constants/` | `app`, `navigation`, `versionSections` (uniones, no enums) | ✅ |
+| `src/lib/constants/` | `app` (nombre y subtítulo) | ✅ |
 | `src/services/` | `types` + un archivo por agregado (`cameraService`, `versionService`, `nodeService`, `parameterService`, `settingsService`, `historyService`, `authService`, `catalogTransferService`) | ✅ Etapa 16 |
-| `src/stores/` | Zustand: `useWorkspaceStore` (cámara/versión/nodo) y `useUiStore` (menú móvil) | ✅ Etapa 16 |
+| `src/stores/` | Zustand: `useWorkspaceStore` (cámara/nivel seleccionados) | ✅ Etapa 16 |
 | `src/styles/` | `theme.css` (tokens `@theme`) y `base.css` | ✅ |
-| `src/pages/` | inicio, 404 y error de ruta | ✅ |
+| `src/pages/` | 404 y error de ruta | ✅ |
 
 ### Sistema visual
 
@@ -113,15 +112,12 @@ silencio.
 ## Rutas previstas
 
 ```text
-/                          → Inicio
-/cameras                   → Mis cámaras GCam
-/cameras/:cameraId         → Cámara y sus versiones
-/cameras/:cameraId/versions/:versionId                     → Resumen
-/cameras/:cameraId/versions/:versionId/settings            → Ajustes (nivel raíz)
-/cameras/:cameraId/versions/:versionId/settings/:nodeId    → Un nivel del menú
-/cameras/:cameraId/versions/:versionId/parameters/:parameterId → Ficha del parámetro
-/cameras/:cameraId/versions/:versionId/compare             → Comparar versiones
-/cameras/:cameraId/versions/:versionId/history             → Historial de valores
+/                          → redirige a /cameras
+/cameras                   → Mis cámaras (tarjetas)
+/cameras/:cameraId         → Ajustes de la cámara (nivel raíz)
+/cameras/:cameraId/settings/:nodeId                        → Un nivel del menú
+/cameras/:cameraId/parameters/:parameterId                 → Ficha del parámetro
+/cameras/:cameraId/history                                 → Historial de valores
 /login                     → Acceso privado
 ```
 

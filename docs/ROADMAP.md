@@ -22,7 +22,8 @@ antes de la siguiente.
 | 13 | Import / export | ✅ | round-trip JSON sin perder relaciones |
 | 14 | Calidad y seguridad | ✅ | pruebas funcionales, de seguridad y responsive ejecutadas |
 | 15 | Despliegue en Vercel | ✅ | SPA rewrites, RLS verificado en producción, móvil OK |
-| 16 | Espejo de ajustes | ✅ | niveles ilimitados con dos acciones, valor actual con comentario e historial, duplicar y comparar versiones |
+| 16 | Espejo de ajustes | ✅ | niveles ilimitados con dos acciones, valor actual con comentario e historial, duplicar cámara con sus valores |
+| 17 | Interfaz de una sola vista | ✅ | sin Inicio ni menú lateral, barra superior, cámaras en tarjetas y globos de ayuda |
 
 ## Pendientes de decisión del usuario
 

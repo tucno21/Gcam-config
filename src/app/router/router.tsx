@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { Navigate, createBrowserRouter } from 'react-router-dom'
 import {
   LazyCamerasPage,
   LazyHistoryPage,
@@ -6,7 +6,6 @@ import {
   LazyParameterPage,
   LazySettingsPage,
 } from './lazyPages'
-import { HomePage } from '../../pages/HomePage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
 import { AppShell } from '../AppShell'
@@ -28,7 +27,7 @@ export const router = createBrowserRouter([
             // Ruta sin segmento: mantiene el shell y captura errores dentro de él.
             errorElement: <RouteErrorPage />,
             children: [
-              { index: true, element: <HomePage /> },
+              { index: true, element: <Navigate to="/cameras" replace /> },
               { path: 'cameras', element: <LazyCamerasPage /> },
               // La cámara abre directamente sus niveles: no hay «versiones» visibles.
               { path: 'cameras/:cameraId', element: <LazySettingsPage /> },
