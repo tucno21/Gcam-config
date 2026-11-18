@@ -38,14 +38,17 @@ Instalado y fijado en `package.json`:
 | zustand | 5.1.0 | estado de interfaz compartido |
 | axios | 1.21.1 | API propia (instancia en `lib/axios/`) |
 | @supabase/supabase-js | 2.109.0 | datos y Auth (cliente en `lib/supabase/`) |
+| @dnd-kit/core · sortable · utilities | 6.3.1 · 10.0.0 · 3.2.2 | árbol (Etapa 7) |
+| @modelcontextprotocol/sdk | 1.32.2 | servidor MCP local (Etapa 12) |
+| zod | 4.6.7 | esquemas de entrada del MCP (requisito del SDK) |
 
-Pendientes de instalar, cada una en la etapa que la use: `@dnd-kit/core`,
-`@dnd-kit/sortable`, `@dnd-kit/utilities` (Etapa 7).
+Pendientes de instalar: ninguna.
 
 **Dependencias autorizadas para agregar cuando la etapa lo requiera** (nada más):
 
 `zustand`, `lucide-react`, `axios`, `@dnd-kit/core`, `@dnd-kit/sortable`,
-`@dnd-kit/utilities`, `@supabase/supabase-js`, `react-router-dom`.
+`@dnd-kit/utilities`, `@supabase/supabase-js`, `react-router-dom`,
+`@modelcontextprotocol/sdk` y `zod` (este último como requisito del SDK).
 
 Reglas:
 
@@ -89,6 +92,8 @@ src/
 
 api/              # Vercel Functions (API externa, Etapa 11; docs/API.md)
   [...path].ts    # router único; _lib/ con http, rest, validation y db
+mcp/              # servidor MCP local para OpenCode (Etapa 12; mcp/README.md)
+  server.ts       # herramientas de lectura y escritura limitada sobre la API
 
 supabase/         # base de datos versionada (no se importa desde src/)
   migrations/     # esquema, funciones/triggers y RLS, en orden
@@ -352,6 +357,12 @@ Una etapa está terminada cuando:
   400 en UUID/tipo/limit inválidos, paginación y recorte, cambio aplicado vs solo
   histórico, recomendación con alcance validado, 404/405 y sin operaciones
   destructivas; base limpia al terminar.
+- **Etapa 12** — OpenCode / MCP: completada. Servidor MCP local por stdio
+  (`mcp/server.ts`, `npm run mcp:build` / `npm run mcp`) sobre la API con token del
+  usuario; 13 herramientas (9 lectura y 4 escritura limitada: crear experimento,
+  proponer cambios sin escribir, guardar recomendación y registrar resultado).
+  Endpoints nuevos en la API para soportarlo (`GET /versions/:id/configurations`,
+  `PATCH /experiments/:id`). Verificado con cliente MCP real: 17/17 comprobaciones.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`

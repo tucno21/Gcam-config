@@ -322,8 +322,30 @@ export const getVersion = async (context: RequestContext, versionId: string) => 
   return toVersion(data)
 }
 
-export const listVersionNodes = async (context: RequestContext, versionId: string) => {
-  const { data } = await rest<NodeRow[]>(context, {
+export const listConfigurationsByVersion = async (
+  context: RequestContext,
+  versionId: string,
+  options: { active: 'active' | 'archived' | 'all'; pagination: Pagination },
+) => {
+  const query: Record<string, string | number | undefined> = {
+    select: CONFIGURATION_COLUMNS,
+    camera_version_id: `eq.${versionId}`,
+    order: 'is_default.desc,name.asc',
+    limit: options.pagination.limit,
+    offset: options.pagination.offset,
+  }
+  if (options.active === 'active') query.is_active = 'eq.true'
+  if (options.active === 'archived') query.is_active = 'eq.false'
+
+  const { data, total } = await rest<ConfigurationRow[]>(context, {
+    path: 'configurations',
+    query,
+    prefer: 'count=exact',
+  })
+  return { items: (data ?? []).map(toConfiguration), total: total ?? 0 }
+}
+
+export const listVersionNodes = async (context: RequestContext, versionId: string) => {  const { data } = await rest<NodeRow[]>(context, {
     path: 'parameter_nodes',
     query: {
       select: NODE_COLUMNS,
@@ -542,8 +564,49 @@ export const createExperiment = async (
   return toExperiment(data)
 }
 
-export const getExperimentConfigurationId = async (context: RequestContext, experimentId: string): Promise<string> => {
-  const { data } = await rest<{ configuration_id: string }>(context, {
+/**
+ * Actualiza solo el resultado del experimento (observaciones, conclusión y/o
+ * estado). Nunca toca el perfil ni el historial de cambios.
+ */
+export const updateExperimentResult = async (
+  context: RequestContext,
+  experimentId: string,
+  input: { observations?: string | null; conclusion?: string | null; status?: ExperimentStatusValue },
+) => {
+  const { data: current } = await rest<{ started_at: string | null; completed_at: string | null; status: ExperimentStatusValue }>(
+    context,
+    {
+      path: 'experiments',
+      single: true,
+      query: { select: 'started_at, completed_at, status', id: `eq.${experimentId}` },
+    },
+  )
+
+  const body: Record<string, unknown> = {}
+  if (input.observations !== undefined) body.observations = input.observations
+  if (input.conclusion !== undefined) body.conclusion = input.conclusion
+
+  if (input.status !== undefined) {
+    const now = new Date().toISOString()
+    const closing = input.status === 'completed' || input.status === 'failed' || input.status === 'inconclusive'
+    body.status = input.status
+    body.started_at = input.status === 'planned' ? null : (current.started_at ?? now)
+    body.completed_at = closing ? now : null
+  }
+
+  const { data } = await rest<ExperimentRow>(context, {
+    method: 'PATCH',
+    path: 'experiments',
+    query: { select: EXPERIMENT_COLUMNS, id: `eq.${experimentId}` },
+    prefer: 'return=representation',
+    single: true,
+    body,
+  })
+
+  return toExperiment(data)
+}
+
+export const getExperimentConfigurationId = async (context: RequestContext, experimentId: string): Promise<string> => {  const { data } = await rest<{ configuration_id: string }>(context, {
     path: 'experiments',
     single: true,
     query: { select: 'configuration_id', id: `eq.${experimentId}` },

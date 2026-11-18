@@ -55,7 +55,7 @@ export const authenticate = async (req: ApiRequest): Promise<RequestContext> => 
 export type RestQuery = Record<string, string | number | undefined>
 
 type RestOptions = {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'PATCH'
   path: string
   query?: RestQuery
   body?: unknown

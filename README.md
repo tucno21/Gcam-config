@@ -32,6 +32,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   históricos, ruta congelada, cronología, comparación y estadísticas (D-031)
 - Etapa 11 — API segura: completa. Vercel Function con JWT + RLS, paginación y
   validación; contrato en `docs/API.md` (D-032)
+- Etapa 12 — OpenCode / MCP: completa. Servidor MCP local por stdio con 13
+  herramientas sobre la API; escritura limitada y sin aplicar cambios (D-033)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
@@ -109,6 +111,7 @@ docs/           # arquitectura, modelo de datos, roadmap y decisiones
 - [`docs/SETUP-SUPABASE.md`](docs/SETUP-SUPABASE.md) — aplicar migraciones y verificar RLS.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — etapas y estado.
 - [`docs/API.md`](docs/API.md) — API externa para OpenCode/MCP (auth, endpoints, límites).
+- [`mcp/README.md`](mcp/README.md) — servidor MCP local: compilar, configurar y herramientas.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decisiones técnicas.
 - [`tarea_gcam.md`](tarea_gcam.md) — alcance funcional completo.
 

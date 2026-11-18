@@ -508,3 +508,27 @@ explícitamente. El valor anterior y la ruta congelada los calcula el servidor. 
 límites (1–100 filas, árbol ≤ 2 000) y la validación de UUID/tipos viven en la API;
 la base valida de nuevo con triggers y RLS.
 
+---
+
+## D-033 — Servidor MCP local por stdio sobre la API, con token de usuario
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+La integración con OpenCode es un servidor MCP **local** (`mcp/server.ts`, compilado a
+`mcp/dist/server.mjs`) que habla únicamente con la API de la Etapa 11 por HTTP. Se
+lanza con `node` y transporta por stdio; no se despliega nada. Credenciales:
+`GCAM_API_URL` y `GCAM_API_TOKEN` (access token de Supabase Auth) por entorno, nunca
+en el repositorio.
+
+**Motivo:** cero coste y cero infraestructura extra; el token del usuario mantiene el
+aislamiento de RLS sin `service_role`. Un MCP remoto habría exigido otro despliegue y
+un flujo OAuth propio.
+
+**Consecuencia:** trece herramientas (nueve de lectura y cuatro de escritura
+limitada). No existe herramienta para aplicar cambios a un perfil ni para borrar
+datos; `propose_parameter_changes` valida contra datos reales y no escribe;
+`save_recommendation` guarda en `ai_recommendations` como `proposed`. El token caduca
+(~1 h) y se renueva fuera de la app. Se añadieron dos endpoints a la API para
+soportarlo: `GET /versions/:id/configurations` y `PATCH /experiments/:id` (solo
+observaciones/conclusión/estado).
+

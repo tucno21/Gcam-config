@@ -18,10 +18,12 @@ import {
   insertParameterChange,
   listCameras,
   listConfigurationChanges,
+  listConfigurationsByVersion,
   listExperiments,
   listParameters,
   listVersionNodes,
   listVersions,
+  updateExperimentResult,
 } from './_lib/db'
 import {
   EXPERIMENT_STATUSES,
@@ -181,6 +183,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
           sendJson(res, 200, items, paginationMeta(pagination, total))
           return
         }
+        if (segments.length === 3 && third === 'configurations') {
+          if (method !== 'GET') methodNotAllowed(['GET'])
+          const pagination = parsePagination(req.query)
+          const { items, total } = await listConfigurationsByVersion(context, parseUuid(second, 'versionId'), {
+            active: parseActiveFilter(req.query.active),
+            pagination,
+          })
+          sendJson(res, 200, items, paginationMeta(pagination, total))
+          return
+        }
         throw new ApiError('not_found', 'Ruta de versiones no encontrada.')
       }
 
@@ -243,9 +255,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         }
 
         if (segments.length === 2) {
-          if (method !== 'GET') methodNotAllowed(['GET'])
-          sendJson(res, 200, await getExperiment(context, parseUuid(second, 'experimentId')))
-          return
+          const experimentId = parseUuid(second, 'experimentId')
+          if (method === 'GET') {
+            sendJson(res, 200, await getExperiment(context, experimentId))
+            return
+          }
+          if (method === 'PATCH') {
+            const body = requireBody(req.body)
+            const observations = optionalText(body.observations, 'observations', 4_000)
+            const conclusion = optionalText(body.conclusion, 'conclusion', 4_000)
+            const status = parseExperimentStatus(body.status)
+            if (observations === undefined && conclusion === undefined && status === undefined) {
+              throw new ApiError('bad_request', 'Envía observations, conclusion o status para actualizar el experimento.')
+            }
+            sendJson(res, 200, await updateExperimentResult(context, experimentId, { observations, conclusion, status }))
+            return
+          }
+          methodNotAllowed(['GET', 'PATCH'])
         }
 
         if (segments.length === 3 && third === 'changes') {

@@ -8,6 +8,8 @@ propia. **No hay endpoints destructivos** (sin `PUT`, `PATCH` ni `DELETE`).
 - Datos: PostgREST de Supabase. Auth: Supabase Auth.
 - Seguridad: JWT del usuario + **RLS**. La API **no** usa `service_role`, así que
   no puede saltarse el aislamiento aunque tuviera un bug.
+- Sin operaciones destructivas: no hay `PUT` ni `DELETE`. El único `PATCH` actualiza
+  observaciones/conclusión/estado de un experimento (nunca el perfil).
 
 ## Autenticación
 
@@ -100,6 +102,11 @@ Nodos planos ordenados por `sortOrder` (`parentId` reconstruye la jerarquía):
 
 Parámetros de la versión (o de un nodo concreto), paginados.
 
+`GET /api/versions/:versionId/configurations?active=&limit=&offset=`
+
+Perfiles de la versión con `valueCount` (usado por la integración MCP para el
+historial y la comparación).
+
 ### Parámetros
 
 `GET /api/parameters/:parameterId`
@@ -130,6 +137,17 @@ antiguo, con `pathSnapshot` y `appliedToProfile`.
 `GET /api/experiments/:experimentId`
 
 Devuelve `{ "data": { "experiment": { … }, "changes": [ … ] } }`.
+
+`PATCH /api/experiments/:experimentId`
+
+Actualiza **solo** el resultado del experimento; requiere al menos un campo:
+
+```json
+{ "observations": "…", "conclusion": "…", "status": "completed" }
+```
+
+- No toca el perfil ni el historial de cambios.
+- Cambiar el estado sella `startedAt`/`completedAt` como en la app.
 
 `POST /api/experiments`
 
