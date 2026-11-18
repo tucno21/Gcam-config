@@ -599,10 +599,15 @@ Functions (`api/[...path].ts`), sin backend extra y sin coste añadido.
 **Config** (nunca *Secret*: Vercel rechaza marcar como secretas variables `VITE_`
 porque se incrustan en el bundle). Cambiarlas exige **Redeploy**.
 
-**Enrutado**: una única regla de rewrite con *negative lookahead*
-(`"/((?!api/).*)" → /index.html`). Ni un rewrite explícito de `/api` ni
-`"/(.*)"` genérico: ambos capturaban `/api/*` y devolvían la SPA en lugar de la
-función. `routes` con `handle: filesystem` tampoco incluía las funciones.
+**Enrutado**: dos reglas en `rewrites`, en este orden:
+
+1. `"/api/(.*)" → "/api/[...path]"`. Con Vercel Functions en `api/`, el
+   catch-all solo enruta **un** segmento (`/api/cameras`, `/api/health`); las
+   rutas anidadas (`/api/cameras/:id/versions`) respondían el 404 de la
+   plataforma. Esta regla las envía a la función única.
+2. `"/((?!api/).*)" → /index.html` para la SPA. Un `"/(.*)"` genérico taparía la
+   API; un rewrite de `/api` con destino `/api/$1` tampoco vale (no es un archivo
+   real y acaba sirviendo la SPA).
 
 **Runtime**: las funciones corren como **ESM** (paquete raíz `"type": "module"`),
 por lo que los imports internos de `api/` llevan extensión `.js`

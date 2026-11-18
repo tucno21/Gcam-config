@@ -31,11 +31,13 @@ documento resume el procedimiento y las comprobaciones posteriores.
 
 ## 2. `vercel.json`
 
-- `rewrites`: una sola regla con *negative lookahead* —
-  `"/((?!api/).*)" → /index.html`. Todas las rutas de la SPA (incluido `/login`)
-  caen en `index.html`, mientras `/api/*` llega a la función. Un rewrite
-  explícito de `/api` o un `"/(.*)"` genérico tapa las funciones y devuelve la
-  SPA en su lugar.
+- `rewrites` (en este orden):
+  1. `/api/(.*)` → `/api/[...path]`: envía **todas** las rutas de la API a la
+     función única. Sin esta regla, Vercel solo enruta `/api/<un-segmento>` y las
+     rutas anidadas (`/api/cameras/:id/versions`) responden el 404 de la
+     plataforma.
+  2. `"/((?!api/).*)" → /index.html`: el resto cae en la SPA, así `/login` y las
+     rutas profundas no dan 404. Un `"/(.*)"` genérico taparía la API.
 - `headers`: `nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`,
   `Permissions-Policy` sin cámara/micrófono/geolocalización.
 - `Cache-Control` inmutable para `/assets/*` (nombres con hash).
@@ -89,6 +91,7 @@ Verificado el 2026-11-18 sobre `https://gcam-omega.vercel.app` con navegador rea
 | Borde rojo al guardar una `VITE_*` | Marcada como **Secret** | Cambiarla a **Config** |
 | `404` en `/login` o rutas internas | Falta el rewrite de la SPA | Revisar `vercel.json` y redesplegar |
 | `/api/*` devuelve `index.html` | El rewrite SPA captura `/api` | Usar el *negative lookahead* `/((?!api/).*)` |
+| Rutas anidadas de `/api` dan 404 de Vercel | El catch-all solo se aplica a un segmento | Rewrite `/api/(.*)` → `/api/[...path]` (ya incluido) |
 | `FUNCTION_INVOCATION_FAILED` en `/api/*` | Imports sin extensión en runtime ESM | Imports internos de `api/` con `.js` (ya aplicado) |
 | `PGRST205` | Esquema no aplicado en el proyecto | `docs/SETUP-SUPABASE.md` |
 | Sin filas con sesión | RLS/`owner_id` | Comprobar que la cámara es de tu usuario |
