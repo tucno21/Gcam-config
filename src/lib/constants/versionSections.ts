@@ -1,4 +1,4 @@
-import { FlaskConical, History, Layers, Network, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { GitCompare, History, Layers, ListTree } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type VersionTab = {
@@ -20,38 +20,24 @@ export const VERSION_TABS: VersionTab[] = [
     stage: 0,
   },
   {
-    key: 'hierarchy',
-    label: 'Estructura',
-    description: 'Árbol de categorías, grupos y parámetros sin límite de profundidad.',
-    icon: Network,
-    stage: 7,
+    key: 'settings',
+    label: 'Ajustes',
+    description: 'Espejo de los ajustes del teléfono, nivel a nivel, con su valor actual.',
+    icon: ListTree,
+    stage: 16,
   },
   {
-    key: 'configurations',
-    label: 'Configuraciones',
-    description: 'Perfiles con los valores actuales de cada parámetro.',
-    icon: SlidersHorizontal,
-    stage: 9,
-  },
-  {
-    key: 'experiments',
-    label: 'Experimentos',
-    description: 'Pruebas registradas con objetivos, cambios y conclusión.',
-    icon: FlaskConical,
-    stage: 10,
+    key: 'compare',
+    label: 'Comparar',
+    description: 'Qué se añadió, retiró o cambió entre dos versiones.',
+    icon: GitCompare,
+    stage: 16,
   },
   {
     key: 'history',
     label: 'Historial',
-    description: 'Cronología de cambios con valor anterior, valor nuevo y motivo.',
+    description: 'Cambios de valor con su antes, después, comentario y efecto.',
     icon: History,
-    stage: 10,
-  },
-  {
-    key: 'assistant',
-    label: 'Asistente',
-    description: 'Consultas sobre el catálogo y propuestas de experimentos.',
-    icon: Sparkles,
-    stage: 12,
+    stage: 16,
   },
 ]

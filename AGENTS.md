@@ -7,8 +7,9 @@ Léela completa antes de modificar código. El alcance funcional de referencia e
 ## 1. Objetivo y alcance
 
 Aplicación web **privada**, responsive y de bajo costo para catalogar cámaras GCam
-(LMC, AGC, BSG y las que el usuario registre), sus versiones, su árbol jerárquico de
-parámetros, sus perfiles de configuración y sus experimentos.
+(LMC, AGC, BSG y las que el usuario registre), sus versiones y el **espejo de sus
+ajustes**: niveles del menú, parámetros con su valor actual, notas y el historial de
+qué se cambió y si mejoró.
 
 La aplicación es un **catálogo y laboratorio de documentación**: no modifica la app
 GCam instalada en el teléfono. Los cambios los aplica el usuario a mano y aquí solo
@@ -38,7 +39,6 @@ Instalado y fijado en `package.json`:
 | zustand | 5.1.0 | estado de interfaz compartido |
 | axios | 1.21.1 | API propia (instancia en `lib/axios/`) |
 | @supabase/supabase-js | 2.109.0 | datos y Auth (cliente en `lib/supabase/`) |
-| @dnd-kit/core · sortable · utilities | 6.3.1 · 10.0.0 · 3.2.2 | árbol (Etapa 7) |
 | @modelcontextprotocol/sdk | 1.32.2 | servidor MCP local (Etapa 12) |
 | zod | 4.6.7 | esquemas de entrada del MCP (requisito del SDK) |
 | vitest | 4.1.12 | tests de lógica pura (Etapa 14, autorizado) |
@@ -47,9 +47,10 @@ Pendientes de instalar: ninguna.
 
 **Dependencias autorizadas para agregar cuando la etapa lo requiera** (nada más):
 
-`zustand`, `lucide-react`, `axios`, `@dnd-kit/core`, `@dnd-kit/sortable`,
-`@dnd-kit/utilities`, `@supabase/supabase-js`, `react-router-dom`,
+`zustand`, `lucide-react`, `axios`, `@supabase/supabase-js`, `react-router-dom`,
 `@modelcontextprotocol/sdk`, `zod` (requisito del SDK) y `vitest` (solo dev, tests).
+`@dnd-kit/*` se retiró en la Etapa 16 al sustituir el editor de árbol por el espejo
+de ajustes; no se vuelve a instalar sin una razón nueva.
 
 Reglas:
 
@@ -80,10 +81,10 @@ src/
     router/
     providers/
   components/     # reutilizables, sin lógica de negocio
-    common/ layout/ feedback/ forms/ tree/
+    common/ layout/ feedback/ forms/
   features/       # un módulo por dominio
-    auth/ cameras/ versions/ hierarchy/ parameters/
-    configurations/ experiments/ history/ assistant/
+    auth/ cameras/ versions/
+    settings/     # espejo de ajustes, comparación e historial
   hooks/          # hooks compartidos
   lib/            # supabase/ axios/ errors/ config/ constants/ helpers/ validation/
   services/       # acceso a datos por dominio + types.ts del contrato
@@ -157,9 +158,12 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 
 - Toda operación de persistencia vive en `src/services/`, un archivo por dominio:
   `cameraService`, `versionService`, `nodeService`, `parameterService`,
-  `configurationService`, `experimentService`, `historyService` y `authService`,
-  más `catalogTransferService` (respaldos JSON, Etapa 13).
+  `settingsService` (duplicar nivel/parámetro), `historyService` (valor actual e
+  historial) y `authService`, más `catalogTransferService` (respaldos JSON, Etapa 13).
   Los tipos de fila y de dominio están en `services/types.ts`.
+- Los servicios heredados de perfiles (`configurationService`, `experimentService`)
+  **no se usan en la interfaz** desde la Etapa 16: se conservan para la API/MCP y para
+  respaldos antiguos. No añadir código nuevo que dependa de ellos.
 - Cada servicio documenta su contrato: firma, entradas, salida y errores posibles.
   Devuelve dominio en `camelCase`; `*Row` (snake_case) no sale de `services/`.
 - Los errores se normalizan con `toAppError()` a `AppError` (`code` + `message`
@@ -168,9 +172,12 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 - Toda consulta lleva límite/paginación. Prohibido `select('*')` masivo sin filtro
   ni límite en tablas grandes. Las lecturas completas (árbol) van por lotes con tope
   y exponen `truncated`.
-- Zustand solo guarda estado de interfaz (cámara/versión/perfil seleccionados,
+- Zustand solo guarda estado de interfaz (cámara/versión/nivel seleccionados,
   filtros, preferencias de navegación). **La base de datos es la fuente de verdad**;
   no se duplican registros persistidos en el store.
+- Cambiar el valor de un parámetro pasa **siempre** por `historyService.applyValue`:
+  actualiza `parameters.current_value` y registra el cambio. Nunca se toca
+  `default_value` (D-037).
 
 ## 9. Seguridad y entorno
 
@@ -200,33 +207,51 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
   Sin endpoints destructivos; los cambios de contrato actualizan `docs/API.md`.
 - No crear buckets de almacenamiento de imágenes.
 
-## 10. Árbol jerárquico (funcionalidad central)
+## 10. Espejo de ajustes (funcionalidad central)
 
-- Profundidad **ilimitada**: render recursivo, nunca anidamiento fijo de componentes.
-- Modelo: `parameter_nodes.parent_id` (nullable) + `sort_order`. El nodo raíz tiene
-  `parent_id = NULL`.
+- La app replica el menú del teléfono: cada **nivel** es una pantalla (`Photo
+  Processing`, `Main Camera`, `Sharpness`…) y cada **parámetro** es una fila con su
+  valor actual. Se navega nivel a nivel, no con un editor de árbol abstracto.
+- Profundidad **ilimitada**: render recursivo por navegación, nunca anidamiento fijo
+  de componentes. Cada nivel tiene dos acciones: «Añadir subnivel» y «Añadir
+  parámetro».
+- Modelo: `parameter_nodes.parent_id` (nullable) + `sort_order` + `lineage_id`. El
+  nodo raíz tiene `parent_id = NULL`.
 - Un árbol pertenece a **una** `camera_version_id`; prohibido mover nodos entre
   versiones.
+- `lineage_id` identifica el mismo nivel/parámetro entre versiones (sobrevive a
+  renombrar y a duplicar). Es lo que permite comparar AGC 8.2 con AGC 9.4.
+- `is_active = false` significa **retirado en esta versión**: se conserva con su
+  historial y se oculta salvo que se pidan los retirados. Nunca borrar lo que tiene
+  historial.
 - Invariantes que se validan antes de escribir:
   1. Un nodo no puede ser padre de sí mismo.
   2. Un nodo no puede moverse dentro de su propio subárbol (sin ciclos).
   3. Los descendientes se conservan al mover una rama.
-  4. `sort_order` queda estable y contiguo entre hermanos.
+  4. `sort_order` queda estable entre hermanos.
 - La ruta completa (breadcrumbs) se **calcula** desde las relaciones; nunca se
   guarda como fuente de verdad duplicada.
-- Operaciones destructivas: confirmación explícita indicando cuántos parámetros y
-  descendientes se verán afectados.
+- Operaciones destructivas: confirmación explícita indicando cuántos niveles y
+  parámetros se verán afectados.
 
-## 11. Valor predeterminado e historial
+## 11. Valor actual, predeterminado e historial
 
-- `parameters.default_value` es documentación de referencia y **nunca** se
-  sobrescribe al editar un perfil.
-- El valor actual vive en `configuration_values` (uno por configuración + parámetro).
-- Si el valor predeterminado no se conoce, se registra como desconocido con su
+- `parameters.default_value` es la **referencia de fábrica** y no se sobrescribe
+  nunca al cambiar el valor actual.
+- El valor que tiene el teléfono vive en `parameters.current_value` con
+  `current_value_source`:
+  - `custom`: valor definido a mano;
+  - `default`: el propio «Default (From Library)» de GCam (se muestra literal);
+  - `unknown`: sin dato.
+- Si el predeterminado no se conoce, se registra como desconocido con su
   `default_value_source`; no se rellena con un valor inventado.
-- `parameter_changes` es **append-only**: conserva valor anterior, valor nuevo,
-  motivo, observación, fecha y una instantánea de la ruta jerárquica del momento.
-- Editar un experimento antiguo no altera en silencio la configuración actual.
+- `parameters.notes` guarda el conocimiento acumulado del ajuste (qué controla y qué
+  se observó). Es distinto del comentario de un cambio concreto.
+- `parameter_changes` es **append-only**: conserva valor anterior y nuevo (con su
+  procedencia), comentario, efecto observado (`better`/`same`/`worse`/`unknown`),
+  fecha y una instantánea de la ruta. No se edita ni se borra.
+- Cambiar un valor **no** crea ni modifica perfiles: los perfiles se retiraron de la
+  interfaz en la Etapa 16 (D-037).
 
 ## 12. Datos reales vs. ficticios
 
@@ -390,14 +415,27 @@ Una etapa está terminada cuando:
   producción con navegador real: login sin aviso, CRUD de cámara (alta, ficha y
   borrado), `/api/health` 200, `/api/cameras` 401 sin token, `anon` → 42501, rutas
   profundas sirviendo la SPA y móvil 390 px sin desbordes; base limpia (D-036).
+- **Etapa 16** — espejo de ajustes: completada. La interfaz se replanteó sobre el
+  mismo esquema: cámara → versiones → niveles del menú (profundidad ilimitada, dos
+  acciones por nivel) → parámetros con **valor actual** y procedencia (`custom`,
+  `default` = «Default (From Library)», `unknown`), nota acumulada y **historial
+  append-only** con antes/después, comentario y efecto (`mejor`, `igual`, `peor`).
+  Se retiraron los perfiles/configuraciones y los experimentos de la interfaz
+  (`configurationService`/`experimentService` quedan solo para API/MCP). Duplicar
+  versión copia niveles, linaje y opcionalmente valores y notas; **Comparar** usa
+  `lineage_id` para listar nuevos, retirados, renombrados, movidos y cambiados. Los
+  niveles y parámetros que ya no existen se **retiran** (`is_active = false`) en vez
+  de borrarse. La cámara nueva crea su versión «1.0» automáticamente. Migración 06
+  aplicada al proyecto alojado. Verificado con E2E real (20/20) y `npm test` (45).
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
-  aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
-  incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`
-  del historial (D-031). Verificado con el usuario
-  real: `anon` → `42501`, CRUD de extremo a extremo en verde (19 comprobaciones) y
-  todos los bloqueos del modelo activos. El acceso administrativo va por el pooler
+  aplicado con **6 migraciones** registradas en `supabase_migrations.schema_migrations`,
+  incluida la de endurecimiento de privilegios (D-025), la marca `applied_to_profile`
+  del historial (D-031) y el espejo de ajustes (D-037). Verificado con el usuario
+  real: `anon` → `42501`, CRUD de extremo a extremo en verde y todos los bloqueos del
+  modelo activos. El acceso administrativo va por el pooler
   `aws-1-us-east-1.pooler.supabase.com` porque el host directo solo tiene IPv6.
 - **Pendiente operativo**: configurar la URL del sitio en el panel
   (*Authentication → URL Configuration → Site URL*, p. ej. `http://localhost:5173`)
   para que los enlaces de correo no caigan en `localhost:3000`. Recomendado resetear
   la contraseña de la base tras terminarla de usar fuera del panel.
+

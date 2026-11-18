@@ -9,6 +9,7 @@ import { Textarea } from '../../../components/forms/Textarea'
 import { toAppError } from '../../../lib/errors/AppError'
 import { parameterService } from '../../../services/parameterService'
 import type { ConfidenceLevel, DataType, DefaultValueSource, Parameter, ParameterNode } from '../../../services/types'
+import type { ParameterField, ParameterFormValues } from '../validation'
 import {
   CONFIDENCE_OPTIONS,
   DATA_TYPE_OPTIONS,
@@ -19,38 +20,36 @@ import {
   validateParameterField,
   validateParameterForm,
 } from '../validation'
-import type { ParameterField, ParameterFieldErrors, ParameterFormValues } from '../validation'
 import { TypedValueEditor } from './TypedValueEditor'
 
-type ParameterFormDialogProps = {
+type ParameterDialogProps = {
   open: boolean
   node: ParameterNode
-  /** `null` = nuevo parámetro; con valor, edición. */
+  /** `null` = nuevo. */
   parameter: Parameter | null
   onClose: () => void
   onSaved: (parameter: Parameter, mode: 'create' | 'edit') => void
 }
 
-/** Alta y edición de parámetros dentro de un nodo. */
-export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }: ParameterFormDialogProps) => {
+/** Alta y edición de la definición de un parámetro (sin tocar el valor actual). */
+export const ParameterDialog = ({ open, node, parameter, onClose, onSaved }: ParameterDialogProps) => {
   const isEdit = parameter !== null
-
-  // El padre remonta al abrir (key): estado limpio sin efectos.
   const [values, setValues] = useState<ParameterFormValues>(() => parameterToFormValues(parameter))
-  const [errors, setErrors] = useState<ParameterFieldErrors>({})
+  const [errors, setErrors] = useState<ReturnType<typeof validateParameterForm>>({})
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [showReference, setShowReference] = useState(
+    () => Boolean(parameter && (parameter.defaultValue !== null || parameter.defaultValueSource !== 'unknown')),
+  )
 
   const setField = (field: keyof ParameterFormValues, value: string | boolean) => {
     const next = { ...values, [field]: value } as ParameterFormValues
-    // Cambiar de tipo deja el valor previo inválido: se limpia.
     if (field === 'dataType' && value !== values.dataType) {
       next.defaultValueRaw = ''
       next.allowedValuesRaw = value === 'enum' ? values.allowedValuesRaw : ''
-      if (value === 'enum' && next.defaultValueSource === 'unknown') next.defaultValueSource = 'documentation'
     }
     setValues(next)
-    if (['name', 'key', 'description', 'unit', 'sortOrder', 'allowedValues', 'source', 'defaultValue'].includes(field)) {
+    if (['name', 'description', 'notes', 'unit', 'allowedValues', 'defaultValue', 'source'].includes(field)) {
       setErrors((previous) => ({ ...previous, [field]: validateParameterField(field as ParameterField, next) }))
     }
   }
@@ -58,7 +57,6 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormError(null)
-
     const nextErrors = validateParameterForm(values)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
@@ -69,16 +67,11 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
       const saved = isEdit
         ? await parameterService.update(parameter.id, payload)
         : await parameterService.create({ nodeId: node.id, ...payload })
-
       onSaved(saved, isEdit ? 'edit' : 'create')
       onClose()
     } catch (cause) {
-      const appError = toAppError(cause)
-      setFormError(
-        appError.code === 'conflict'
-          ? 'Ya existe un parámetro con esa clave en este nodo.'
-          : appError.message,
-      )
+      const error = toAppError(cause)
+      setFormError(error.code === 'conflict' ? 'Ya existe un parámetro con ese nombre o clave en este nivel.' : error.message)
     } finally {
       setSaving(false)
     }
@@ -89,59 +82,32 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
       open={open}
       onClose={saving ? () => undefined : onClose}
       title={isEdit ? 'Editar parámetro' : `Nuevo parámetro en «${node.name}»`}
-      description="El valor predeterminado es documentación de referencia: los perfiles no lo modifican."
+      description="Define el ajuste. El valor actual se cambia desde la lista, con su comentario."
     >
       <form className="space-y-4 px-5 py-5" onSubmit={handleSubmit} noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="parameter-name" label="Nombre" error={errors.name} required>
-            <Input
-              id="parameter-name"
-              value={values.name}
-              invalid={Boolean(errors.name)}
-              aria-describedby={errors.name ? 'parameter-name-error' : undefined}
-              maxLength={120}
-              autoComplete="off"
-              placeholder="Ej. Max Frames"
-              onChange={(event) => setField('name', event.target.value)}
-              onBlur={() => setErrors((previous) => ({ ...previous, name: validateParameterField('name', values) }))}
-              disabled={saving}
-            />
-          </FormField>
-
-          <FormField id="parameter-key" label="Clave técnica" hint="Si se conoce. Única dentro del nodo." error={errors.key}>
-            <Input
-              id="parameter-key"
-              value={values.key}
-              invalid={Boolean(errors.key)}
-              aria-describedby={errors.key ? 'parameter-key-error' : 'parameter-key-hint'}
-              maxLength={80}
-              autoComplete="off"
-              className="font-mono text-[13px]"
-              placeholder="max_frames"
-              onChange={(event) => setField('key', event.target.value)}
-              onBlur={() => setErrors((previous) => ({ ...previous, key: validateParameterField('key', values) }))}
-              disabled={saving}
-            />
-          </FormField>
-        </div>
-
-        <FormField id="parameter-description" label="Descripción / observaciones" error={errors.description}>
-          <Textarea
-            id="parameter-description"
-            rows={2}
-            value={values.description}
-            invalid={Boolean(errors.description)}
-            aria-describedby={errors.description ? 'parameter-description-error' : undefined}
-            placeholder="Qué controla y cualquier observación."
-            onChange={(event) => setField('description', event.target.value)}
+        <FormField id="param-name" label="Nombre" error={errors.name} required>
+          <Input
+            id="param-name"
+            value={values.name}
+            invalid={Boolean(errors.name)}
+            aria-describedby={errors.name ? 'param-name-error' : undefined}
+            maxLength={120}
+            autoComplete="off"
+            placeholder="Ej. Sharp Depth 1"
+            onChange={(event) => setField('name', event.target.value)}
+            onBlur={() => setErrors((previous) => ({ ...previous, name: validateParameterField('name', values) }))}
             disabled={saving}
           />
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="parameter-type" label="Tipo de dato" hint={DATA_TYPE_OPTIONS.find((option) => option.value === values.dataType)?.hint}>
+          <FormField
+            id="param-type"
+            label="Tipo"
+            hint={DATA_TYPE_OPTIONS.find((option) => option.value === values.dataType)?.hint}
+          >
             <Select
-              id="parameter-type"
+              id="param-type"
               value={values.dataType}
               disabled={saving}
               onChange={(event) => setField('dataType', event.target.value as DataType)}
@@ -154,12 +120,14 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
             </Select>
           </FormField>
 
-          <FormField id="parameter-unit" label="Unidad" error={errors.unit}>
+          <FormField id="param-unit" label="Unidad" hint="Opcional." error={errors.unit}>
             <Input
-              id="parameter-unit"
+              id="param-unit"
               value={values.unit}
+              invalid={Boolean(errors.unit)}
+              aria-describedby={errors.unit ? 'param-unit-error' : 'param-unit-hint'}
               maxLength={24}
-              placeholder="Opcional. Ej. ms, KB, %"
+              placeholder="Ej. %, ms"
               onChange={(event) => setField('unit', event.target.value)}
               disabled={saving}
             />
@@ -168,18 +136,18 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
 
         {values.dataType === 'enum' && (
           <FormField
-            id="parameter-allowed"
-            label="Opciones permitidas"
-            hint="Una por línea (o separadas por comas)."
+            id="param-allowed"
+            label="Opciones"
+            hint="Una por línea."
             error={errors.allowedValues}
             required
           >
             <Textarea
-              id="parameter-allowed"
-              rows={3}
+              id="param-allowed"
+              rows={2}
               value={values.allowedValuesRaw}
               invalid={Boolean(errors.allowedValues)}
-              aria-describedby={errors.allowedValues ? 'parameter-allowed-error' : 'parameter-allowed-hint'}
+              aria-describedby={errors.allowedValues ? 'param-allowed-error' : 'param-allowed-hint'}
               placeholder={'on\noff'}
               onChange={(event) => setField('allowedValuesRaw', event.target.value)}
               disabled={saving}
@@ -187,17 +155,39 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
           </FormField>
         )}
 
-        <div className="rounded-panel border border-line bg-surface-sunken p-4">
-          <p className="ui-label">Valor predeterminado (documentación)</p>
+        <FormField
+          id="param-notes"
+          label="Nota del parámetro"
+          hint="Qué controla y qué has observado. Se conserva entre versiones."
+          error={errors.notes}
+        >
+          <Textarea
+            id="param-notes"
+            rows={3}
+            value={values.notes}
+            invalid={Boolean(errors.notes)}
+            aria-describedby={errors.notes ? 'param-notes-error' : 'param-notes-hint'}
+            placeholder="Ej. Subirlo da más nitidez, pero aparece ruido en sombra."
+            onChange={(event) => setField('notes', event.target.value)}
+            disabled={saving}
+          />
+        </FormField>
+
+        <details
+          className="rounded-control border border-line bg-surface-sunken px-4 py-3"
+          open={showReference}
+          onToggle={(event) => setShowReference((event.target as HTMLDetailsElement).open)}
+        >
+          <summary className="cursor-pointer text-[13px] font-medium text-ink">
+            Valor de referencia (opcional)
+          </summary>
+          <p className="mt-1 text-xs leading-relaxed text-ink-faint">
+            Lo que trae la app de fábrica. Si no lo conoces, déjalo vacío: no se inventa.
+          </p>
           <div className="mt-3 space-y-4">
-            <FormField
-              id="parameter-default"
-              label="Valor"
-              hint="Vacío = desconocido. No se inventa un valor."
-              error={errors.defaultValue}
-            >
+            <FormField id="param-default" label="Valor predeterminado" error={errors.defaultValue}>
               <TypedValueEditor
-                id="parameter-default"
+                id="param-default"
                 dataType={values.dataType}
                 value={values.defaultValueRaw}
                 allowedValues={parseAllowedValues(values.allowedValuesRaw)}
@@ -207,11 +197,17 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
             </FormField>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField id="parameter-source" label="Procedencia" error={errors.source} required={values.defaultValueRaw.trim().length > 0}>
+              <FormField
+                id="param-source"
+                label="Procedencia"
+                error={errors.source}
+                required={values.defaultValueRaw.trim().length > 0}
+              >
                 <Select
-                  id="parameter-source"
+                  id="param-source"
                   value={values.defaultValueSource}
                   invalid={Boolean(errors.source)}
+                  aria-describedby={errors.source ? 'param-source-error' : undefined}
                   onChange={(event) => setField('defaultValueSource', event.target.value as DefaultValueSource)}
                   disabled={saving}
                 >
@@ -223,9 +219,9 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
                 </Select>
               </FormField>
 
-              <FormField id="parameter-confidence" label="Certeza" hint="Opcional.">
+              <FormField id="param-confidence" label="Certeza" hint="Opcional.">
                 <Select
-                  id="parameter-confidence"
+                  id="param-confidence"
                   value={values.defaultValueConfidence}
                   onChange={(event) => setField('defaultValueConfidence', event.target.value as '' | ConfidenceLevel)}
                   disabled={saving}
@@ -239,34 +235,7 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
               </FormField>
             </div>
           </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField id="parameter-order" label="Orden" hint="Entre los parámetros del nodo." error={errors.sortOrder}>
-            <Input
-              id="parameter-order"
-              inputMode="numeric"
-              value={values.sortOrder}
-              invalid={Boolean(errors.sortOrder)}
-              onChange={(event) => setField('sortOrder', event.target.value)}
-              disabled={saving}
-            />
-          </FormField>
-
-          <label className="mt-6 flex items-start gap-3 rounded-control border border-line bg-surface-sunken px-4 py-3">
-            <input
-              type="checkbox"
-              className="mt-0.5 size-4 accent-[var(--color-accent)]"
-              checked={values.isActive}
-              onChange={(event) => setField('isActive', event.target.checked)}
-              disabled={saving}
-            />
-            <span className="text-[13px] leading-relaxed text-ink-muted">
-              Activo
-              <span className="mt-0.5 block text-xs text-ink-faint">Los inactivos se conservan pero no se usan.</span>
-            </span>
-          </label>
-        </div>
+        </details>
 
         {formError && (
           <p role="alert" className="text-xs leading-relaxed text-danger">

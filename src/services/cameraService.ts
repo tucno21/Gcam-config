@@ -103,7 +103,13 @@ export const cameraService = {
     }
   },
 
-  /** Crea una cámara. `owner_id` lo pone la base (`auth.uid()`). */
+  /**
+   * Crea una cámara y su primera versión («1.0», predeterminada).
+   *
+   * El usuario casi siempre trabaja con una sola versión por cámara; tenerla
+   * desde el principio evita un paso y deja el árbol listo para replicar los
+   * ajustes. Si algún día cambia de versión de GCam, la añade y duplica.
+   */
   async create(input: CameraInput): Promise<Camera> {
     try {
       const { data, error } = await getSupabase()
@@ -121,7 +127,14 @@ export const cameraService = {
         .returns<CameraRow>()
 
       if (error) throw error
-      return toCamera(data)
+
+      const { error: versionError } = await getSupabase()
+        .from('camera_versions')
+        .insert({ camera_id: data.id, version: '1.0', is_default: true, is_active: true })
+
+      if (versionError) throw versionError
+
+      return { ...toCamera(data), versionCount: 1 }
     } catch (error) {
       throw toAppError(error)
     }

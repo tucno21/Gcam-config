@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { CameraBackup } from './exportSchema'
 import {
   BACKUP_FORMAT,
   BACKUP_SCHEMA_VERSION,
@@ -7,9 +8,9 @@ import {
   validateCameraBackup,
 } from './exportSchema'
 
-const baseNode = { id: 'n1', parentId: null, name: 'Base', nodeType: 'category', sortOrder: 0, description: null }
+const baseNode = { id: 'n1', parentId: null, name: 'Base', nodeType: 'category' as const, sortOrder: 0, description: null }
 
-const validBackup = () => ({
+const validBackup = (): CameraBackup => ({
   format: BACKUP_FORMAT,
   schemaVersion: BACKUP_SCHEMA_VERSION,
   exportedAt: '2026-11-18T10:00:00Z',
@@ -119,5 +120,38 @@ describe('validateCameraBackup', () => {
   it('valida el texto JSON antes de analizarlo', () => {
     expect(parseJsonText('{ roto').errors[0]).toMatch(/JSON/)
     expect(parseJsonText(JSON.stringify(validBackup())).errors).toEqual([])
+  })
+
+  it('acepta los campos del espejo de ajustes (linaje, valor actual e historial)', () => {
+    const backup = validBackup()
+    backup.versions[0].nodes[0] = { ...backup.versions[0].nodes[0], lineageId: 'L-n1', isActive: true }
+    backup.versions[0].parameters[0] = {
+      ...backup.versions[0].parameters[0],
+      lineageId: 'L-p1',
+      notes: 'Sube la nitidez y el ruido.',
+      currentValue: 1.375,
+      currentValueSource: 'custom',
+    }
+    backup.versions[0].history = [
+      {
+        parameterId: 'p1',
+        previousValue: 1.25,
+        previousValueSource: 'custom',
+        newValue: 1.375,
+        newValueSource: 'custom',
+        reason: 'Recuperar detalle',
+        observation: null,
+        effect: 'better',
+        pathSnapshot: ['Base'],
+        appliedToProfile: true,
+      },
+    ]
+
+    const result = validateCameraBackup(backup)
+    expect(result.errors).toEqual([])
+    expect(result.data?.versions[0].parameters[0].notes).toContain('nitidez')
+    expect(result.data?.versions[0].parameters[0].currentValueSource).toBe('custom')
+    expect(result.data?.versions[0].history?.[0].effect).toBe('better')
+    expect(summarizeBackup(result.data!).changes).toBe(2)
   })
 })

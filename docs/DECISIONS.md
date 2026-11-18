@@ -622,3 +622,51 @@ usuario funciona bajo RLS.
 `https://gcam-omega.vercel.app` y añadir `https://gcam-omega.vercel.app/**` a
 *Redirect URLs* para que los correos vuelvan a la app publicada.
 
+---
+
+## D-037 — Espejo de ajustes: niveles, valor actual e historial sin perfiles
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+**Qué cambia.** La Etapa 16 sustituye el editor de árbol abstracto por un **espejo
+del menú del teléfono**: cámara → versiones → niveles (`Photo Processing`, `Main
+Camera`, `Sharpness`…) → parámetros. Cada nivel tiene dos acciones: «Añadir
+subnivel» y «Añadir parámetro». La navegación es nivel a nivel, con breadcrumbs.
+
+**Modelo de valor.**
+
+- `parameters.current_value` + `current_value_source` (`custom` | `default` |
+  `unknown`). `default` se muestra literal como «Default (From Library)»: no se
+  inventa el número de fábrica.
+- `parameters.default_value` sigue siendo la referencia documentada y **nunca** se
+  sobrescribe al cambiar el valor actual.
+- `parameters.notes` guarda el conocimiento del ajuste, separado del comentario de
+  un cambio concreto.
+
+**Historial.** `parameter_changes` deja de exigir experimento. Cada cambio guarda
+valor anterior y nuevo con su procedencia, comentario (`reason`), efecto
+(`better`/`same`/`worse`/`unknown`) y ruta congelada. Sigue siendo **append-only**:
+RLS no concede `update` ni `delete`. Las políticas ahora autorizan por el parámetro
+→ nodo → versión, no por el experimento.
+
+**Linaje y comparación.** `parameter_nodes.lineage_id` y `parameters.lineage_id`
+identifican el mismo ajuste entre versiones. Duplicar una versión los conserva; los
+elementos nuevos reciben otro. «Comparar» empareja por linaje y distingue nuevo,
+retirado, renombrado, movido y cambiado. `is_active = false` significa retirado en
+esa versión, no borrado.
+
+**Duplicar versión.** Copia niveles, orden, estado y linaje, y opcionalmente los
+valores actuales y las notas (casilla marcada por defecto). No copia historial.
+Una cámara nueva crea su versión «1.0» para empezar a replicar sin pasos extra.
+
+**Se retira de la interfaz.** Perfiles (`configurations`, `configuration_values`) y
+experimentos (`experiments`). Las tablas, sus servicios, la API y el MCP se
+conservan para no romper datos ni integraciones existentes; no se añade código nuevo
+que dependa de ellos. La exportación JSON incluye ahora `lineageId`, notas, valor
+actual y el historial de valores (`history`), manteniendo compatibilidad con
+respaldos anteriores (campos opcionales).
+
+**Consecuencia.** La complejidad baja: desaparecen tres pestañas y dos conceptos
+(perfil activo, experimento). El trabajo diario es abrir un nivel, cambiar un valor
+y escribir qué pasó.
+

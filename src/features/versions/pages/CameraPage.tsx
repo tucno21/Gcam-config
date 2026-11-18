@@ -111,7 +111,7 @@ export const CameraPage = () => {
       downloadJson(backupFilename(camera.slug), backup)
       notify({
         title: 'Respaldo exportado',
-        description: `${camera.name}: versiones, árbol, parámetros, perfiles, experimentos e historial.`,
+        description: `${camera.name}: versiones, niveles, parámetros, valores actuales e historial.`,
         tone: 'success',
       })
     } catch (cause) {
@@ -177,7 +177,7 @@ export const CameraPage = () => {
 
   const handleDuplicated = (result: { targetId: string; nodes: number; parameters: number }) => {
     notify({
-      title: 'Estructura duplicada',
+      title: 'Versión duplicada',
       description: `${result.nodes} ${result.nodes === 1 ? 'nodo' : 'nodos'} y ${result.parameters} ${
         result.parameters === 1 ? 'parámetro' : 'parámetros'
       } copiados a la versión destino.`,
@@ -288,7 +288,7 @@ export const CameraPage = () => {
           <div>
             <h2 className="text-base font-medium tracking-tight text-ink">Versiones</h2>
             <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">
-              Cada versión conserva su propio árbol de parámetros, sus perfiles y sus experimentos.
+              Cada versión conserva su propio espejo de ajustes y todo su historial.
             </p>
           </div>
           <Button
@@ -318,7 +318,7 @@ export const CameraPage = () => {
           <EmptyState
             icon={Copy}
             title="Esta cámara todavía no tiene versiones"
-            description="Crea la primera versión para empezar a documentar su estructura de parámetros. La etiqueta debe ser única dentro de la cámara."
+            description="Crea la primera versión para empezar a replicar los ajustes del teléfono. La etiqueta debe ser única dentro de la cámara."
             action={
               <Button
                 variant="primary"
@@ -331,7 +331,7 @@ export const CameraPage = () => {
                 Crear la primera versión
               </Button>
             }
-            footnote="Podrás duplicar la estructura de otra versión más adelante, siempre con confirmación previa."
+            footnote="Podrás duplicar los ajustes de otra versión más adelante, con o sin sus valores actuales."
           />
         )}
 
@@ -362,11 +362,7 @@ export const CameraPage = () => {
                       )}
                       <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-disabled">
                         <span>
-                          {version.nodeCount} {version.nodeCount === 1 ? 'nodo' : 'nodos'}
-                        </span>
-                        <span>
-                          {version.configurationCount}{' '}
-                          {version.configurationCount === 1 ? 'perfil' : 'perfiles'}
+                          {version.nodeCount} {version.nodeCount === 1 ? 'nivel' : 'niveles'}
                         </span>
                         <span>Actualizada {formatDateTime(version.updatedAt)}</span>
                       </span>
@@ -400,7 +396,7 @@ export const CameraPage = () => {
                         label={
                           canDelete
                             ? `Eliminar ${version.version}`
-                            : `${version.version} tiene estructura o perfiles: solo se puede archivar`
+                            : `${version.version} tiene niveles o datos: solo se puede archivar`
                         }
                         disabled={!canDelete}
                         onClick={() => setDeletingVersion(version)}
@@ -458,9 +454,10 @@ export const CameraPage = () => {
         loading={deleteBusy}
       >
         Se eliminará permanentemente la versión <strong className="text-ink">{deletingVersion?.version}</strong> de{' '}
-        {camera.name}. Solo es posible cuando no tiene estructura de parámetros ni perfiles; con datos, la base lo
+        {camera.name}. Solo es posible cuando no tiene niveles ni datos; con historial, la base lo
         impedirá y el camino seguro es archivarla.
       </ConfirmDialog>
     </>
   )
 }
+

@@ -1,14 +1,12 @@
 import { createBrowserRouter } from 'react-router-dom'
 import {
-  LazyAssistantPage,
   LazyCameraPage,
   LazyCamerasPage,
-  LazyConfigurationsPage,
-  LazyExperimentsPage,
-  LazyHierarchyPage,
+  LazyComparePage,
   LazyHistoryPage,
   LazyLoginPage,
   LazyParameterPage,
+  LazySettingsPage,
   LazyVersionOverviewPage,
 } from './lazyPages'
 import { HomePage } from '../../pages/HomePage'
@@ -37,12 +35,14 @@ export const router = createBrowserRouter([
               { path: 'cameras', element: <LazyCamerasPage /> },
               { path: 'cameras/:cameraId', element: <LazyCameraPage /> },
               { path: 'cameras/:cameraId/versions/:versionId', element: <LazyVersionOverviewPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/hierarchy', element: <LazyHierarchyPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/parameters/:parameterId', element: <LazyParameterPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/configurations', element: <LazyConfigurationsPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/experiments', element: <LazyExperimentsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/settings', element: <LazySettingsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/settings/:nodeId', element: <LazySettingsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/compare', element: <LazyComparePage /> },
               { path: 'cameras/:cameraId/versions/:versionId/history', element: <LazyHistoryPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/assistant', element: <LazyAssistantPage /> },
+              {
+                path: 'cameras/:cameraId/versions/:versionId/parameters/:parameterId',
+                element: <LazyParameterPage />,
+              },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

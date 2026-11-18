@@ -9,16 +9,18 @@ import {
   isInsideBranch,
   searchVisibleIds,
   siblingOrderAfterDrop,
-} from './treeUtils'
+} from './tree'
 
 const node = (id: string, parentId: string | null, name: string, sortOrder = 0): ParameterNode => ({
   id,
   cameraVersionId: 'version-1',
   parentId,
+  lineageId: `lineage-${id}`,
   name,
   description: null,
   nodeType: 'group',
   sortOrder,
+  isActive: true,
   createdAt: '2026-11-01T00:00:00Z',
   updatedAt: '2026-11-01T00:00:00Z',
 })
@@ -80,3 +82,4 @@ describe('siblingOrderAfterDrop', () => {
     expect(siblingOrderAfterDrop(['a', 'b'], 'a', 'zz', 'before')).toEqual(['b'])
   })
 })
+

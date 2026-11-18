@@ -35,6 +35,46 @@ export const formatDefaultValue = (parameter: Parameter): string => {
   return parameter.unit ? `${base} ${parameter.unit}` : base
 }
 
+/**
+ * Valor que tiene el teléfono ahora, tal como lo muestra GCam.
+ * `default` se escribe literal: es un valor de librería que no conocemos.
+ */
+export const formatCurrentValue = (parameter: Parameter): string => {
+  if (parameter.currentValueSource === 'default') return 'Default (From Library)'
+  if (parameter.currentValueSource === 'unknown' || parameter.currentValue === null) return 'Sin valor'
+  return formatParameterValue(parameter, parameter.currentValue)
+}
+
+/** Igual que `formatCurrentValue` pero con la unidad al final. */
+export const formatCurrentValueWithUnit = (parameter: Parameter): string => {
+  const base = formatCurrentValue(parameter)
+  if (parameter.unit && parameter.currentValueSource === 'custom') return `${base} ${parameter.unit}`
+  return base
+}
+
+export const CURRENT_SOURCE_LABEL: Record<Parameter['currentValueSource'], string> = {
+  custom: 'Definido a mano',
+  default: 'Default (From Library)',
+  unknown: 'Sin valor',
+}
+
+export const EFFECT_LABEL = {
+  better: 'Mejor',
+  same: 'Igual',
+  worse: 'Peor',
+  unknown: 'Aún no lo sé',
+} as const
+
+export type EffectValue = keyof typeof EFFECT_LABEL
+
+export const EFFECT_OPTIONS: Array<{ value: '' | EffectValue; label: string }> = [
+  { value: '', label: 'Sin indicar' },
+  { value: 'better', label: EFFECT_LABEL.better },
+  { value: 'same', label: EFFECT_LABEL.same },
+  { value: 'worse', label: EFFECT_LABEL.worse },
+  { value: 'unknown', label: EFFECT_LABEL.unknown },
+]
+
 export const SOURCE_LABEL: Record<Parameter['defaultValueSource'], string> = {
   documentation: 'Documentación',
   original_file: 'Archivo original',

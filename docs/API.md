@@ -11,6 +11,13 @@ propia. **No hay endpoints destructivos** (sin `PUT`, `PATCH` ni `DELETE`).
 - Sin operaciones destructivas: no hay `PUT` ni `DELETE`. El único `PATCH` actualiza
   observaciones/conclusión/estado de un experimento (nunca el perfil).
 
+> **Nota (Etapa 16).** Los endpoints de perfiles y experimentos son **heredados**:
+> la interfaz ya no los crea (D-037), pero se mantienen para clientes existentes y
+> para los datos anteriores. Los parámetros ahora incluyen `notes`,
+> `currentValue`, `currentValueSource` y `lineageId`, y los cambios de
+> `parameter_changes` pueden tener `experimentId = null`, `effect` y las
+> procedencias de cada valor.
+
 ## Autenticación
 
 Todas las rutas salvo `GET /api/health` exigen:

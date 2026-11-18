@@ -135,7 +135,7 @@ export const ImportCatalogDialog = ({ open, onClose, onImported }: ImportCatalog
       open={open}
       onClose={importing ? () => undefined : onClose}
       title="Importar respaldo"
-      description="Crea una cámara nueva con versiones, árbol, parámetros y perfiles del archivo. Nunca sobrescribe datos existentes."
+      description="Crea una cámara nueva con versiones, niveles, parámetros, valores e historial del archivo. Nunca sobrescribe datos existentes."
     >
       <form className="space-y-4 px-5 py-5" onSubmit={handleSubmit} noValidate>
         <div className="rounded-control border border-dashed border-line-strong bg-surface-sunken/50 px-4 py-5 text-center">
@@ -173,12 +173,11 @@ export const ImportCatalogDialog = ({ open, onClose, onImported }: ImportCatalog
                 {summary.versions} {summary.versions === 1 ? 'versión' : 'versiones'}
               </p>
               <p className="mt-1">
-                {summary.nodes} {summary.nodes === 1 ? 'nodo' : 'nodos'} · {summary.parameters}{' '}
-                {summary.parameters === 1 ? 'parámetro' : 'parámetros'} · {summary.configurations}{' '}
-                {summary.configurations === 1 ? 'perfil' : 'perfiles'} · {summary.values}{' '}
-                {summary.values === 1 ? 'valor' : 'valores'} · {summary.experiments}{' '}
-                {summary.experiments === 1 ? 'experimento' : 'experimentos'} · {summary.changes}{' '}
-                {summary.changes === 1 ? 'cambio' : 'cambios'}
+                {summary.nodes} {summary.nodes === 1 ? 'nivel' : 'niveles'} · {summary.parameters}{' '}
+                {summary.parameters === 1 ? 'parámetro' : 'parámetros'} · {summary.values}{' '}
+                {summary.values === 1 ? 'valor heredado' : 'valores heredados'} · {summary.changes}{' '}
+                {summary.changes === 1 ? 'cambio' : 'cambios'} · {summary.experiments}{' '}
+                {summary.experiments === 1 ? 'experimento heredado' : 'experimentos heredados'}
               </p>
             </div>
 

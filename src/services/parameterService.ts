@@ -7,31 +7,36 @@ import type { Parameter, ParameterInput, ParameterRow } from './types'
 /**
  * Parámetros definidos en los nodos de una versión.
  *
- * `defaultValue` es **documentación de referencia** y nunca se sobrescribe al
- * editar un perfil; el valor actual de un perfil vive en `configuration_values`.
+ * `defaultValue` es **documentación de referencia** (lo que trae la app) y
+ * `currentValue` es lo que tiene el teléfono ahora. Editarlo pasa por
+ * `historyService`, que deja la línea de historial con su comentario y efecto.
  *
  * Contrato:
  * - `listByVersion` necesita los nodos de la versión y lee por lotes acotados.
- * - La base valida la forma del JSONB según `dataType` y, para `enum`, que el
- *   valor pertenezca a `allowedValues` (`app.validate_parameter_definition`).
+ * - La base valida la forma del JSONB según `dataType` (`app.validate_parameter_definition`
+ *   para el predeterminado y `app.validate_parameter_current_value` para el actual).
  * - Todos los errores se traducen a `AppError`.
  */
 
 const PARAMETER_COLUMNS =
-  'id, node_id, key, name, description, data_type, unit, default_value, default_value_source, default_value_confidence, allowed_values, sort_order, is_active, created_at, updated_at' as const
+  'id, node_id, lineage_id, key, name, description, notes, data_type, unit, default_value, default_value_source, default_value_confidence, allowed_values, current_value, current_value_source, sort_order, is_active, created_at, updated_at' as const
 
 const toParameter = (row: ParameterRow): Parameter => ({
   id: row.id,
   nodeId: row.node_id,
+  lineageId: row.lineage_id,
   key: row.key,
   name: row.name,
   description: row.description,
+  notes: row.notes,
   dataType: row.data_type,
   unit: row.unit,
   defaultValue: row.default_value,
   defaultValueSource: row.default_value_source,
   defaultValueConfidence: row.default_value_confidence,
   allowedValues: row.allowed_values,
+  currentValue: row.current_value,
+  currentValueSource: row.current_value_source,
   sortOrder: row.sort_order,
   isActive: row.is_active,
   createdAt: row.created_at,
@@ -43,14 +48,18 @@ const toRowPatch = (input: Partial<ParameterInput>): Partial<ParameterRow> => {
   if (input.key !== undefined) patch.key = input.key?.trim() || null
   if (input.name !== undefined) patch.name = input.name.trim()
   if (input.description !== undefined) patch.description = input.description?.trim() || null
+  if (input.notes !== undefined) patch.notes = input.notes?.trim() || null
   if (input.dataType !== undefined) patch.data_type = input.dataType
   if (input.unit !== undefined) patch.unit = input.unit?.trim() || null
   if (input.defaultValue !== undefined) patch.default_value = input.defaultValue
   if (input.defaultValueSource !== undefined) patch.default_value_source = input.defaultValueSource
   if (input.defaultValueConfidence !== undefined) patch.default_value_confidence = input.defaultValueConfidence
   if (input.allowedValues !== undefined) patch.allowed_values = input.allowedValues
+  if (input.currentValue !== undefined) patch.current_value = input.currentValue
+  if (input.currentValueSource !== undefined) patch.current_value_source = input.currentValueSource
   if (input.sortOrder !== undefined) patch.sort_order = input.sortOrder
   if (input.isActive !== undefined) patch.is_active = input.isActive
+  if (input.lineageId !== undefined) patch.lineage_id = input.lineageId
   return patch
 }
 
@@ -133,6 +142,7 @@ export const parameterService = {
           name: input.name.trim(),
           data_type: input.dataType,
           default_value_source: input.defaultValueSource ?? 'unknown',
+          current_value_source: input.currentValueSource ?? 'unknown',
         })
         .select(PARAMETER_COLUMNS)
         .single()
@@ -145,7 +155,7 @@ export const parameterService = {
     }
   },
 
-  /** Edita la definición. No toca `configuration_values` de ningún perfil. */
+  /** Edita la definición (nombre, tipo, notas…). El valor actual se cambia por el historial. */
   async update(id: string, input: Partial<ParameterInput>): Promise<Parameter> {
     try {
       const { data, error } = await getSupabase()
@@ -167,7 +177,7 @@ export const parameterService = {
     return this.update(id, { isActive })
   },
 
-  /** Borra un parámetro sin valores de perfil asociados (si los hay: `conflict`). */
+  /** Borra un parámetro sin historial asociado (si lo hay: `conflict` → retirar). */
   async remove(id: string): Promise<void> {
     try {
       const { error } = await getSupabase().from('parameters').delete().eq('id', id)

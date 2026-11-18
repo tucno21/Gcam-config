@@ -70,15 +70,10 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/components/layout/` | shell, sidebar, topbar móvil, breadcrumbs, cabecera, pestañas | ✅ |
 | `src/components/feedback/` | `Spinner`, `EmptyState`, `ErrorState`, `PendingStage`, toasts | ✅ |
 | `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ |
-| `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | integrado en `features/hierarchy` |
-| `src/features/hierarchy/` | constructor del árbol: `treeUtils`, `NodeRow`, detalle, formulario y drag & drop | ✅ Etapa 7 |
-| `src/features/parameters/` | parámetros: formulario tipado, lista por nodo, ficha y formato de valores | ✅ Etapa 8 |
-| `src/features/configurations/` | perfiles: lista, formulario, comparación de valores y restauración | ✅ Etapa 9 |
-| `src/features/experiments/` | experimentos: formulario, cambios con ruta congelada, detalle, comparación y estadísticas | ✅ Etapa 10 |
-| `src/features/history/` | cronología de cambios de la versión con filtros | ✅ Etapa 10 |
+| `src/features/settings/` | espejo de ajustes: niveles, parámetros, valor con comentario, comparación por linaje, historial y `tree.ts` | ✅ Etapa 16 |
 | `src/features/cameras/` | catálogo real: página, `CameraFormDialog`, importación y validación del dominio | ✅ Etapa 13 |
-| `src/features/versions/` | versiones reales: formulario, duplicación de estructura, ficha (resumen) | ✅ Etapa 6 |
-| `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |
+| `src/features/versions/` | versiones reales: formulario, duplicación con valores, ficha (resumen) | ✅ Etapa 6 |
+| `src/features/auth/` | `AuthProvider`, `useAuth`, `/login` y validación de acceso | ✅ Etapa 4 |
 | `src/hooks/` | `usePageTitle`, `useAsyncData`, `useWorkspaceSelection`, `useDebouncedValue` | ✅ |
 | `src/lib/helpers/` | funciones puras (`cn`, `shortId`, `slugify`, `formatDate`) | ✅ |
 | `src/lib/supabase/` | cliente único de Supabase | ✅ Etapa 4 |
@@ -86,9 +81,8 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/lib/errors/` | `AppError` y `toAppError` | ✅ Etapa 4 |
 | `src/lib/config/` | lectura de variables `VITE_*` | ✅ Etapa 4 |
 | `src/lib/constants/` | `app`, `navigation`, `versionSections` (uniones, no enums) | ✅ |
-| `src/lib/validation/` | validadores compartidos | Etapa 5 |
-| `src/services/` | `types` + un archivo por agregado (`cameraService`, `versionService`, `nodeService`, `parameterService`, `configurationService`, `experimentService`, `historyService`, `authService`) | ✅ Etapa 4 |
-| `src/stores/` | Zustand: `useWorkspaceStore` (cámara/versión/nodo/perfil) y `useUiStore` (menú móvil) | ✅ Etapa 9 |
+| `src/services/` | `types` + un archivo por agregado (`cameraService`, `versionService`, `nodeService`, `parameterService`, `settingsService`, `historyService`, `authService`, `catalogTransferService`) | ✅ Etapa 16 |
+| `src/stores/` | Zustand: `useWorkspaceStore` (cámara/versión/nodo) y `useUiStore` (menú móvil) | ✅ Etapa 16 |
 | `src/styles/` | `theme.css` (tokens `@theme`) y `base.css` | ✅ |
 | `src/pages/` | inicio, 404 y error de ruta | ✅ |
 
@@ -119,15 +113,15 @@ silencio.
 ## Rutas previstas
 
 ```text
-/                          → Inicio / redirección a cámaras
+/                          → Inicio
 /cameras                   → Mis cámaras GCam
 /cameras/:cameraId         → Cámara y sus versiones
-/cameras/:cameraId/versions/:versionId/hierarchy     → Estructura de parámetros
-/cameras/:cameraId/versions/:versionId/parameters/:parameterId  → Ficha
-/cameras/:cameraId/versions/:versionId/configurations           → Perfiles
-/cameras/:cameraId/versions/:versionId/experiments              → Experimentos
-/cameras/:cameraId/versions/:versionId/history                  → Historial
-/cameras/:cameraId/versions/:versionId/assistant                → Asistente IA
+/cameras/:cameraId/versions/:versionId                     → Resumen
+/cameras/:cameraId/versions/:versionId/settings            → Ajustes (nivel raíz)
+/cameras/:cameraId/versions/:versionId/settings/:nodeId    → Un nivel del menú
+/cameras/:cameraId/versions/:versionId/parameters/:parameterId → Ficha del parámetro
+/cameras/:cameraId/versions/:versionId/compare             → Comparar versiones
+/cameras/:cameraId/versions/:versionId/history             → Historial de valores
 /login                     → Acceso privado
 ```
 
@@ -136,16 +130,16 @@ las relaciones y se muestra como breadcrumbs dentro de la vista.
 
 ## Estado
 
-- **Local (useState/useReducer)**: formularios, expansión de nodos, diálogos.
-- **Zustand**: cámara/versión/perfil activos, filtros compartidos entre vistas,
-  preferencia de tema. Nunca tokens, sesión ni filas de la base de datos.
+- **Local (useState/useReducer)**: formularios, diálogos, búsqueda del nivel.
+- **Zustand**: cámara/versión/nivel activos y filtros compartidos entre vistas.
+  Nunca tokens, sesión ni filas de la base de datos.
 - **Supabase**: fuente de verdad de todo lo persistente.
 
 ## Árbol jerárquico
 
 - Se carga una vez por versión (`id, parent_id, name, node_type, sort_order`) y se
   construye en memoria un índice `Map<id, Node[]>` indexado por `parent_id`
-  (`features/hierarchy/treeUtils.ts`).
+  (`features/settings/tree.ts`).
 - Render recursivo por nivel; sin límite de profundidad ni componentes anidados
   predefinidos. Expansión contraída por nodo; la rama del nodo seleccionado se
   muestra siempre expandida (recordar selección con `useWorkspaceStore`).

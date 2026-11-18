@@ -94,10 +94,12 @@ La aplicación es privada, pero el aislamiento se aplica desde el inicio.
 | `id` | uuid PK | |
 | `camera_version_id` | uuid FK → `camera_versions` | `on delete restrict` |
 | `parent_id` | uuid FK → `parameter_nodes` | nullable; `on delete restrict` |
+| `lineage_id` | uuid not null | identidad del nivel entre versiones (migración 06) |
 | `name` | text not null | |
 | `description` | text | |
 | `node_type` | text not null default `'group'` | CHECK: `category`, `group`, `subgroup` |
 | `sort_order` | integer not null default 0 | orden entre hermanos |
+| `is_active` | boolean not null default true | `false` = retirado en esta versión |
 | `created_at` / `updated_at` | timestamptz | |
 
 - Índices: `(camera_version_id, parent_id, sort_order)`.
@@ -114,24 +116,32 @@ La aplicación es privada, pero el aislamiento se aplica desde el inicio.
 |---|---|---|
 | `id` | uuid PK | |
 | `node_id` | uuid FK → `parameter_nodes` | `on delete restrict` |
+| `lineage_id` | uuid not null | identidad del parámetro entre versiones (migración 06) |
 | `key` | text | clave técnica si se conoce; nullable |
 | `name` | text not null | |
 | `description` | text | |
+| `notes` | text | conocimiento acumulado del ajuste (máx. 4 000) |
 | `data_type` | text not null | CHECK: `integer`, `decimal`, `boolean`, `string`, `enum`, `json` |
 | `unit` | text | opcional |
 | `default_value` | jsonb | `null` = desconocido |
 | `default_value_source` | text not null default `'unknown'` | CHECK: `documentation`, `original_file`, `observation`, `unknown` |
 | `default_value_confidence` | text | CHECK: `low`, `medium`, `high`, null |
 | `allowed_values` | jsonb | array, solo si `data_type = 'enum'` |
+| `current_value` | jsonb | valor que tiene el teléfono (migración 06) |
+| `current_value_source` | text not null default `'unknown'` | CHECK: `custom`, `default`, `unknown` |
 | `sort_order` | integer not null default 0 | |
-| `is_active` | boolean not null default true | |
+| `is_active` | boolean not null default true | `false` = retirado |
 | `created_at` / `updated_at` | timestamptz | |
 
 - Índices: `(node_id, sort_order)`, `(node_id, key)` parcial único
   `where key is not null`.
 - `default_value` es tipado en JSONB y su forma debe corresponder a `data_type`.
-- El valor predeterminado es documentación de referencia: ninguna operación de
-  perfil lo modifica.
+- El valor predeterminado es la referencia de fábrica: **nunca** se modifica al
+  cambiar `current_value`.
+- `current_value_source = 'default'` significa «Default (From Library)» y se
+  muestra literal; `current_value` queda `null`.
+- El trigger `app.validate_parameter_current_value` comprueba que el valor actual
+  respete el tipo y que un `custom` no esté vacío.
 
 ### `configurations`
 
@@ -188,25 +198,32 @@ Valor **actual** de un parámetro en un perfil.
 
 ### `parameter_changes`
 
-Historial **append-only** de cambios dentro de un experimento.
+Historial **append-only** de cambios de valor. Desde la migración 06 el
+experimento es opcional: los cambios sueltos del espejo de ajustes se ligan solo al
+parámetro.
 
 | Columna | Tipo | Notas |
 |---|---|---|
 | `id` | uuid PK | |
-| `experiment_id` | uuid FK → `experiments` | `on delete restrict` |
+| `experiment_id` | uuid FK → `experiments` | **nullable**; `on delete restrict` |
 | `parameter_id` | uuid FK → `parameters` | `on delete restrict` |
 | `previous_value` | jsonb | `null` si no había valor |
+| `previous_value_source` | text | `custom`, `default`, `unknown` o null (legado) |
 | `new_value` | jsonb | |
-| `reason` | text | |
+| `new_value_source` | text | `custom`, `default`, `unknown` o null (legado) |
+| `reason` | text | comentario del cambio |
 | `observation` | text | |
+| `effect` | text | `better`, `same`, `worse`, `unknown` o null |
 | `path_snapshot` | jsonb | instantánea de nombres jerárquicos al momento del cambio |
-| `applied_to_profile` | boolean not null default false | `true` si al registrar también se actualizó el perfil |
+| `applied_to_profile` | boolean not null default false | `true` si se actualizó el valor actual |
 | `created_at` | timestamptz not null default now() | |
 
 - Sin `update` ni `delete` para clientes: solo `insert` y `select` por RLS.
 - `path_snapshot` conserva la ruta aunque luego se renombre un nodo.
-- `applied_to_profile` fija al insertar si el cambio también actualizó
-  `configuration_values`; no existe `update` para esa marca (D-031).
+- La autorización va por el parámetro → nodo → versión (migración 06), así los
+  cambios sin experimento quedan cubiertos.
+- `applied_to_profile` se conserva por compatibilidad: en el espejo de ajustes vale
+  `true` porque el cambio ya está aplicado a `parameters.current_value`.
 
 ### `ai_recommendations`
 
@@ -304,3 +321,17 @@ Implementado en `20261118120200_rls_policies.sql`.
   **ficticia** y se omite si no existe ningún usuario.
 - Pruebas de aislamiento en `supabase/tests/rls.sql` (solo base local).
 - Procedimiento completo: `docs/SETUP-SUPABASE.md`.
+
+Orden actual (6 migraciones):
+
+1. `20261118120000_init_schema.sql` — tablas e índices.
+2. `20261118120100_functions_triggers.sql` — `updated_at`, validaciones y árbol.
+3. `20261118120200_rls_policies.sql` — RLS y privilegios.
+4. `20261118120300_privileges_hardening.sql` — endurecimiento (D-025).
+5. `20261118120400_parameter_changes_applied.sql` — `applied_to_profile` (D-031).
+6. `20261118120600_settings_mirror.sql` — `lineage_id`, `is_active`, valor actual,
+   notas e historial sin experimento (D-037).
+
+> `configurations`, `configuration_values` y `experiments` siguen existiendo y
+> mantienen sus políticas, pero **la interfaz ya no las usa** desde la Etapa 16
+> (D-037). Se conservan para respaldos y para la API/MCP.

@@ -30,25 +30,31 @@ import { BACKUP_FORMAT, BACKUP_SCHEMA_VERSION, PROFILE_FORMAT } from '../feature
 type NodeRow = {
   id: string
   parent_id: string | null
+  lineage_id: string
   name: string
   description: string | null
   node_type: BackupNode['nodeType']
   sort_order: number
+  is_active: boolean
   created_at: string
 }
 
 type ParameterRow = {
   id: string
   node_id: string
+  lineage_id: string
   key: string | null
   name: string
   description: string | null
+  notes: string | null
   data_type: BackupParameter['dataType']
   unit: string | null
   default_value: unknown
   default_value_source: BackupParameter['defaultValueSource']
   default_value_confidence: BackupParameter['defaultValueConfidence']
   allowed_values: string[] | null
+  current_value: unknown
+  current_value_source: NonNullable<BackupParameter['currentValueSource']>
   sort_order: number
   is_active: boolean
   created_at: string
@@ -69,9 +75,12 @@ type ConfigurationRow = {
 type ChangeRow = {
   parameter_id: string
   previous_value: unknown
+  previous_value_source: BackupChange['previousValueSource']
   new_value: unknown
+  new_value_source: BackupChange['newValueSource']
   reason: string | null
   observation: string | null
+  effect: BackupChange['effect']
   path_snapshot: string[] | null
   applied_to_profile: boolean
   created_at: string
@@ -103,7 +112,7 @@ type VersionRow = {
 }
 
 const PARAMETER_COLUMNS =
-  'id, node_id, key, name, description, data_type, unit, default_value, default_value_source, default_value_confidence, allowed_values, sort_order, is_active, created_at'
+  'id, node_id, lineage_id, key, name, description, notes, data_type, unit, default_value, default_value_source, default_value_confidence, allowed_values, current_value, current_value_source, sort_order, is_active, created_at'
 
 /* ── Exportación ────────────────────────────────────────────────────────── */
 
@@ -159,7 +168,7 @@ export const catalogTransferService = {
           await Promise.all([
             client
               .from('parameter_nodes')
-              .select('id, parent_id, name, description, node_type, sort_order, created_at')
+              .select('id, parent_id, lineage_id, name, description, node_type, sort_order, is_active, created_at')
               .eq('camera_version_id', version.id)
               .order('sort_order', { ascending: true })
               .limit(5_000),
@@ -185,25 +194,31 @@ export const catalogTransferService = {
         const nodes = ((nodeData ?? []) as NodeRow[]).map((row) => ({
           id: row.id,
           parentId: row.parent_id,
+          lineageId: row.lineage_id,
           name: row.name,
           description: row.description,
           nodeType: row.node_type,
           sortOrder: row.sort_order,
+          isActive: row.is_active,
           createdAt: row.created_at,
         }))
 
         const parameters = ((parameterData ?? []) as ParameterRow[]).map((row) => ({
           id: row.id,
           nodeId: row.node_id,
+          lineageId: row.lineage_id,
           key: row.key,
           name: row.name,
           description: row.description,
+          notes: row.notes,
           dataType: row.data_type,
           unit: row.unit,
           defaultValue: row.default_value,
           defaultValueSource: row.default_value_source,
           defaultValueConfidence: row.default_value_confidence,
           allowedValues: row.allowed_values,
+          currentValue: row.current_value,
+          currentValueSource: row.current_value_source,
           sortOrder: row.sort_order,
           isActive: row.is_active,
           createdAt: row.created_at,
@@ -268,6 +283,35 @@ export const catalogTransferService = {
           }
         }
 
+        const history: BackupChange[] = []
+        if (parameters.length > 0) {
+          const { data: historyData, error: historyError } = await client
+            .from('parameter_changes')
+            .select(
+              'parameter_id, previous_value, previous_value_source, new_value, new_value_source, reason, observation, effect, path_snapshot, applied_to_profile, created_at',
+            )
+            .in('parameter_id', parameters.map((parameter) => parameter.id))
+            .order('created_at', { ascending: true })
+            .limit(5_000)
+          if (historyError) throw historyError
+
+          for (const change of (historyData ?? []) as ChangeRow[]) {
+            history.push({
+              parameterId: change.parameter_id,
+              previousValue: change.previous_value,
+              previousValueSource: change.previous_value_source ?? null,
+              newValue: change.new_value,
+              newValueSource: change.new_value_source ?? null,
+              reason: change.reason,
+              observation: change.observation,
+              effect: change.effect ?? null,
+              pathSnapshot: change.path_snapshot,
+              appliedToProfile: change.applied_to_profile,
+              createdAt: change.created_at,
+            })
+          }
+        }
+
         backupVersions.push({
           version: version.version,
           releaseLabel: version.release_label,
@@ -279,6 +323,7 @@ export const catalogTransferService = {
           parameters,
           configurations,
           experiments,
+          history,
         })
       }
 
@@ -363,15 +408,19 @@ export const catalogTransferService = {
         .map((row) => ({
           id: row.id,
           nodeId: row.node_id,
+          lineageId: row.lineage_id,
           key: row.key,
           name: row.name,
           description: row.description,
+          notes: row.notes,
           dataType: row.data_type,
           unit: row.unit,
           defaultValue: row.default_value,
           defaultValueSource: row.default_value_source,
           defaultValueConfidence: row.default_value_confidence,
           allowedValues: row.allowed_values,
+          currentValue: row.current_value,
+          currentValueSource: row.current_value_source,
           sortOrder: row.sort_order,
           isActive: row.is_active,
           createdAt: row.created_at,
@@ -482,6 +531,8 @@ export const catalogTransferService = {
                 description: node.description,
                 node_type: node.nodeType,
                 sort_order: node.sortOrder,
+                is_active: node.isActive ?? true,
+                ...(node.lineageId ? { lineage_id: node.lineageId } : {}),
                 ...(node.createdAt ? { created_at: node.createdAt } : {}),
               })
               .select('id')
@@ -507,14 +558,18 @@ export const catalogTransferService = {
               key: parameter.key,
               name: parameter.name,
               description: parameter.description,
+              notes: parameter.notes ?? null,
               data_type: parameter.dataType,
               unit: parameter.unit,
               default_value: parameter.defaultValue,
               default_value_source: parameter.defaultValueSource,
               default_value_confidence: parameter.defaultValueConfidence,
               allowed_values: parameter.allowedValues,
+              current_value: parameter.currentValue ?? null,
+              current_value_source: parameter.currentValueSource ?? 'unknown',
               sort_order: parameter.sortOrder,
               is_active: parameter.isActive,
+              ...(parameter.lineageId ? { lineage_id: parameter.lineageId } : {}),
               ...(parameter.createdAt ? { created_at: parameter.createdAt } : {}),
             })
             .select('id')
@@ -522,6 +577,27 @@ export const catalogTransferService = {
           if (error) throw error
           parameterMap.set(parameter.id, (data as { id: string }).id)
           counts.parameters += 1
+        }
+
+        // Historial de valores (cambios sueltos del espejo de ajustes)
+        for (const change of versionBackup.history ?? []) {
+          const newParameterId = parameterMap.get(change.parameterId)
+          if (!newParameterId) continue
+          const { error } = await client.from('parameter_changes').insert({
+            parameter_id: newParameterId,
+            previous_value: change.previousValue ?? null,
+            previous_value_source: change.previousValueSource ?? null,
+            new_value: change.newValue ?? null,
+            new_value_source: change.newValueSource ?? null,
+            reason: change.reason,
+            observation: change.observation,
+            effect: change.effect ?? null,
+            path_snapshot: change.pathSnapshot,
+            applied_to_profile: change.appliedToProfile,
+            ...(change.createdAt ? { created_at: change.createdAt } : {}),
+          })
+          if (error) throw error
+          counts.changes += 1
         }
 
         // Perfiles y valores

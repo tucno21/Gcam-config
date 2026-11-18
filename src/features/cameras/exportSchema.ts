@@ -1,4 +1,13 @@
-import type { DataType, DefaultValueSource, ConfidenceLevel, ExperimentStatus, NodeType } from '../../services/types'
+import { CURRENT_VALUE_SOURCES } from '../../services/types'
+import type {
+  DataType,
+  DefaultValueSource,
+  ConfidenceLevel,
+  CurrentValueSource,
+  ChangeEffect,
+  ExperimentStatus,
+  NodeType,
+} from '../../services/types'
 
 /**
  * Formato propio de respaldo (D-034).
@@ -20,6 +29,9 @@ export type BackupNode = {
   description: string | null
   nodeType: NodeType
   sortOrder: number
+  /** Identidad entre versiones (opcional en respaldos antiguos). */
+  lineageId?: string
+  isActive?: boolean
   createdAt?: string
 }
 
@@ -29,12 +41,16 @@ export type BackupParameter = {
   key: string | null
   name: string
   description: string | null
+  notes?: string | null
   dataType: DataType
   unit: string | null
   defaultValue: unknown
   defaultValueSource: DefaultValueSource
   defaultValueConfidence: ConfidenceLevel | null
   allowedValues: string[] | null
+  currentValue?: unknown
+  currentValueSource?: CurrentValueSource
+  lineageId?: string
   sortOrder: number
   isActive: boolean
   createdAt?: string
@@ -59,9 +75,12 @@ export type BackupConfiguration = {
 export type BackupChange = {
   parameterId: string
   previousValue: unknown
+  previousValueSource?: CurrentValueSource | null
   newValue: unknown
+  newValueSource?: CurrentValueSource | null
   reason: string | null
   observation: string | null
+  effect?: ChangeEffect | null
   pathSnapshot: string[] | null
   appliedToProfile: boolean
   createdAt?: string
@@ -93,6 +112,8 @@ export type BackupVersion = {
   parameters: BackupParameter[]
   configurations: BackupConfiguration[]
   experiments: BackupExperiment[]
+  /** Cambios de valor sueltos (historial del espejo de ajustes). */
+  history?: BackupChange[]
 }
 
 export type CameraBackup = {
@@ -149,6 +170,7 @@ const DATA_TYPES = ['integer', 'decimal', 'boolean', 'string', 'enum', 'json'] a
 const SOURCES = ['documentation', 'original_file', 'observation', 'unknown'] as const
 const CONFIDENCES = ['low', 'medium', 'high'] as const
 const STATUSES = ['planned', 'in_progress', 'completed', 'failed', 'inconclusive'] as const
+const EFFECTS = ['better', 'same', 'worse', 'unknown'] as const
 
 const isOneOf = <T extends readonly string[]>(list: T, value: unknown): value is T[number] =>
   typeof value === 'string' && (list as readonly string[]).includes(value)
@@ -182,6 +204,8 @@ const validateNode = (raw: unknown, index: number, errors: string[]): BackupNode
     description: isNullableText(raw.description) ? raw.description : null,
     nodeType: raw.nodeType,
     sortOrder: raw.sortOrder,
+    lineageId: isText(raw.lineageId) ? raw.lineageId : undefined,
+    isActive: isBoolean(raw.isActive) ? raw.isActive : true,
     createdAt: isText(raw.createdAt) ? raw.createdAt : undefined,
   }
 }
@@ -215,6 +239,7 @@ const validateParameter = (raw: unknown, index: number, errors: string[]): Backu
     key: isNullableText(raw.key) ? raw.key : null,
     name: raw.name,
     description: isNullableText(raw.description) ? raw.description : null,
+    notes: isNullableText(raw.notes) ? raw.notes : null,
     dataType: raw.dataType,
     unit: isNullableText(raw.unit) ? raw.unit : null,
     defaultValue: raw.defaultValue ?? null,
@@ -222,6 +247,12 @@ const validateParameter = (raw: unknown, index: number, errors: string[]): Backu
     defaultValueConfidence:
       raw.defaultValueConfidence === undefined ? null : (raw.defaultValueConfidence as ConfidenceLevel | null),
     allowedValues: Array.isArray(raw.allowedValues) ? (raw.allowedValues as unknown[]).map(String) : null,
+    currentValue: raw.currentValue ?? null,
+    currentValueSource:
+      raw.currentValueSource === undefined || !isOneOf(CURRENT_VALUE_SOURCES, raw.currentValueSource)
+        ? 'unknown'
+        : raw.currentValueSource,
+    lineageId: isText(raw.lineageId) ? raw.lineageId : undefined,
     sortOrder: isInteger(raw.sortOrder) ? raw.sortOrder : 0,
     isActive: isBoolean(raw.isActive) ? raw.isActive : true,
     createdAt: isText(raw.createdAt) ? raw.createdAt : undefined,
@@ -254,9 +285,23 @@ const validateChange = (raw: unknown, index: number, errors: string[]): BackupCh
   return {
     parameterId: raw.parameterId,
     previousValue: raw.previousValue ?? null,
+    previousValueSource:
+      raw.previousValueSource === undefined || raw.previousValueSource === null
+        ? null
+        : isOneOf(CURRENT_VALUE_SOURCES, raw.previousValueSource)
+          ? raw.previousValueSource
+          : null,
     newValue: raw.newValue,
+    newValueSource:
+      raw.newValueSource === undefined || raw.newValueSource === null
+        ? null
+        : isOneOf(CURRENT_VALUE_SOURCES, raw.newValueSource)
+          ? raw.newValueSource
+          : null,
     reason: isNullableText(raw.reason) ? raw.reason : null,
     observation: isNullableText(raw.observation) ? raw.observation : null,
+    effect:
+      raw.effect === undefined || raw.effect === null || !isOneOf(EFFECTS, raw.effect) ? null : raw.effect,
     pathSnapshot: Array.isArray(raw.pathSnapshot) ? (raw.pathSnapshot as unknown[]).map(String) : null,
     appliedToProfile: raw.appliedToProfile,
     createdAt: isText(raw.createdAt) ? raw.createdAt : undefined,
@@ -350,6 +395,11 @@ const validateVersion = (raw: unknown, index: number, errors: string[]): BackupV
       ? (raw.experiments as unknown[])
           .map((experiment, experimentIndex) => validateExperiment(experiment, experimentIndex, errors))
           .filter((experiment): experiment is BackupExperiment => experiment !== null)
+      : [],
+    history: Array.isArray(raw.history)
+      ? (raw.history as unknown[])
+          .map((change, changeIndex) => validateChange(change, changeIndex, errors))
+          .filter((change): change is BackupChange => change !== null)
       : [],
   }
 }
@@ -536,6 +586,7 @@ export const summarizeBackup = (backup: CameraBackup): BackupSummary => {
     values += version.configurations.reduce((total, configuration) => total + configuration.values.length, 0)
     experiments += version.experiments.length
     changes += version.experiments.reduce((total, experiment) => total + experiment.changes.length, 0)
+    changes += (version.history ?? []).length
   }
 
   return {

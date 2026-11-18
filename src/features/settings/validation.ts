@@ -16,6 +16,8 @@ export type ParameterFormValues = {
   name: string
   key: string
   description: string
+  /** Conocimiento acumulado del ajuste. */
+  notes: string
   dataType: DataType
   unit: string
   defaultValueRaw: string
@@ -31,6 +33,7 @@ export type ParameterField =
   | 'name'
   | 'key'
   | 'description'
+  | 'notes'
   | 'unit'
   | 'defaultValue'
   | 'source'
@@ -43,6 +46,7 @@ export const EMPTY_PARAMETER_FORM: ParameterFormValues = {
   name: '',
   key: '',
   description: '',
+  notes: '',
   dataType: 'integer',
   unit: '',
   defaultValueRaw: '',
@@ -152,6 +156,7 @@ export const parameterToFormValues = (parameter: Parameter | null): ParameterFor
         name: parameter.name,
         key: parameter.key ?? '',
         description: parameter.description ?? '',
+        notes: parameter.notes ?? '',
         dataType: parameter.dataType,
         unit: parameter.unit ?? '',
         defaultValueRaw: formatDefaultValueForInput(parameter),
@@ -182,6 +187,8 @@ export const validateParameterField = (field: ParameterField, values: ParameterF
     }
     case 'description':
       return values.description.trim().length > 1000 ? 'Máximo 1000 caracteres.' : undefined
+    case 'notes':
+      return values.notes.trim().length > 4000 ? 'Máximo 4000 caracteres.' : undefined
     case 'unit':
       return values.unit.trim().length > 24 ? 'Máximo 24 caracteres.' : undefined
     case 'sortOrder': {
@@ -207,7 +214,17 @@ export const validateParameterField = (field: ParameterField, values: ParameterF
 }
 
 export const validateParameterForm = (values: ParameterFormValues): ParameterFieldErrors => {
-  const fields: ParameterField[] = ['name', 'key', 'description', 'unit', 'sortOrder', 'allowedValues', 'source', 'defaultValue']
+  const fields: ParameterField[] = [
+    'name',
+    'key',
+    'description',
+    'notes',
+    'unit',
+    'sortOrder',
+    'allowedValues',
+    'source',
+    'defaultValue',
+  ]
   const errors: ParameterFieldErrors = {}
   for (const field of fields) {
     const message = validateParameterField(field, values)
@@ -228,6 +245,7 @@ export const toParameterPayload = (values: ParameterFormValues) => {
     name: values.name.trim(),
     key: values.key.trim() || null,
     description: values.description.trim() || null,
+    notes: values.notes.trim() || null,
     dataType,
     unit: values.unit.trim() || null,
     defaultValue: hasValue ? parsed.value : null,
@@ -237,4 +255,53 @@ export const toParameterPayload = (values: ParameterFormValues) => {
     sortOrder: sortOrderRaw.length > 0 ? Number(sortOrderRaw) : 0,
     isActive: values.isActive,
   }
+}
+
+/* ── Niveles (pantallas del menú de la cámara) ────────────────────────────── */
+
+export type LevelFormValues = { name: string; description: string }
+export const EMPTY_LEVEL_FORM: LevelFormValues = { name: '', description: '' }
+
+export const validateLevelForm = (values: LevelFormValues): { name?: string; description?: string } => {
+  const errors: { name?: string; description?: string } = {}
+  const name = values.name.trim()
+  if (name.length === 0) errors.name = 'Escribe el nombre del nivel.'
+  else if (name.length > 160) errors.name = 'Máximo 160 caracteres.'
+  if (values.description.trim().length > 1000) errors.description = 'Máximo 1000 caracteres.'
+  return errors
+}
+
+/* ── Cambio de valor actual ───────────────────────────────────────────────── */
+
+export type ValueChangeFormValues = {
+  /** Texto del valor; vacío con procedencia `default` o `unknown`. */
+  raw: string
+  source: 'custom' | 'default' | 'unknown'
+  /** Comentario del cambio: qué se hizo y qué se esperaba. */
+  comment: string
+  effect: '' | 'better' | 'same' | 'worse' | 'unknown'
+}
+
+export const validateValueChange = (
+  parameter: Parameter,
+  values: ValueChangeFormValues,
+): { raw?: string; comment?: string } => {
+  const errors: { raw?: string; comment?: string } = {}
+  if (values.source === 'custom') {
+    const parsed = parseDefaultValue(parameter.dataType, values.raw, parameter.allowedValues ?? [])
+    if (parsed.error) errors.raw = parsed.error
+    else if (parsed.value === null) errors.raw = 'Escribe el valor.'
+  }
+  if (values.comment.trim().length > 2000) errors.comment = 'Máximo 2000 caracteres.'
+  return errors
+}
+
+/** Valor listo para guardar: `null` cuando la procedencia no es `custom`. */
+export const toCurrentValue = (
+  parameter: Parameter,
+  values: ValueChangeFormValues,
+): { value: unknown; source: 'custom' | 'default' | 'unknown' } => {
+  if (values.source !== 'custom') return { value: null, source: values.source }
+  const parsed = parseDefaultValue(parameter.dataType, values.raw, parameter.allowedValues ?? [])
+  return { value: parsed.value, source: 'custom' }
 }

@@ -84,7 +84,7 @@ export const CamerasPage = () => {
       downloadJson(backupFilename(camera.slug), backup)
       notify({
         title: 'Respaldo exportado',
-        description: `${camera.name}. Incluye versiones, árbol, parámetros, perfiles, experimentos e historial.`,
+        description: `${camera.name}. Incluye versiones, niveles, parámetros y valores actuales.`,
         tone: 'success',
       })
     } catch (cause) {
@@ -338,7 +338,7 @@ export const CamerasPage = () => {
         onImported={(cameraId, counts) => {
           notify({
             title: 'Respaldo importado',
-            description: `${counts.versions} versiones, ${counts.nodes} nodos, ${counts.parameters} parámetros, ${counts.configurations} perfiles y ${counts.experiments} experimentos.`,
+            description: `${counts.versions} versiones, ${counts.nodes} niveles y ${counts.parameters} parámetros.`,
             tone: 'success',
           })
           reload()

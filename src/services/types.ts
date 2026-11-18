@@ -115,10 +115,12 @@ export type ParameterNodeRow = {
   id: string
   camera_version_id: string
   parent_id: string | null
+  lineage_id: string
   name: string
   description: string | null
   node_type: NodeType
   sort_order: number
+  is_active: boolean
   created_at: string
   updated_at: string
 }
@@ -127,10 +129,14 @@ export type ParameterNode = {
   id: string
   cameraVersionId: string
   parentId: string | null
+  /** Identidad del mismo nivel entre versiones (sobrevive a duplicar). */
+  lineageId: string
   name: string
   description: string | null
   nodeType: NodeType
   sortOrder: number
+  /** `false` = retirado en esta versión: se conserva, no se muestra en la vista activa. */
+  isActive: boolean
   createdAt: string
   updatedAt: string
 }
@@ -142,6 +148,9 @@ export type NodeInput = {
   description?: string | null
   nodeType?: NodeType
   sortOrder?: number
+  isActive?: boolean
+  /** Solo lo usa la duplicación: conserva el linaje del nivel de origen. */
+  lineageId?: string
 }
 
 export type NodePatch = {
@@ -150,6 +159,7 @@ export type NodePatch = {
   description?: string | null
   nodeType?: NodeType
   sortOrder?: number
+  isActive?: boolean
 }
 
 /* ── Parámetros ──────────────────────────────────────────────────────────── */
@@ -163,18 +173,30 @@ export type DefaultValueSource = (typeof DEFAULT_VALUE_SOURCES)[number]
 export const CONFIDENCE_LEVELS = ['low', 'medium', 'high'] as const
 export type ConfidenceLevel = (typeof CONFIDENCE_LEVELS)[number]
 
+/** Procedencia del valor que tiene el teléfono en este momento. */
+export const CURRENT_VALUE_SOURCES = ['custom', 'default', 'unknown'] as const
+export type CurrentValueSource = (typeof CURRENT_VALUE_SOURCES)[number]
+
+/** Efecto observado de un cambio, a ojo del usuario. */
+export const CHANGE_EFFECTS = ['better', 'same', 'worse', 'unknown'] as const
+export type ChangeEffect = (typeof CHANGE_EFFECTS)[number]
+
 export type ParameterRow = {
   id: string
   node_id: string
+  lineage_id: string
   key: string | null
   name: string
   description: string | null
+  notes: string | null
   data_type: DataType
   unit: string | null
   default_value: unknown
   default_value_source: DefaultValueSource
   default_value_confidence: ConfidenceLevel | null
   allowed_values: string[] | null
+  current_value: unknown
+  current_value_source: CurrentValueSource
   sort_order: number
   is_active: boolean
   created_at: string
@@ -184,9 +206,13 @@ export type ParameterRow = {
 export type Parameter = {
   id: string
   nodeId: string
+  /** Identidad del mismo parámetro entre versiones (sobrevive a renombres). */
+  lineageId: string
   key: string | null
   name: string
   description: string | null
+  /** Conocimiento acumulado: qué controla y qué se observó al cambiarlo. */
+  notes: string | null
   dataType: DataType
   unit: string | null
   /** Valor de referencia documentado. `null` significa **desconocido**, no vacío. */
@@ -194,6 +220,9 @@ export type Parameter = {
   defaultValueSource: DefaultValueSource
   defaultValueConfidence: ConfidenceLevel | null
   allowedValues: string[] | null
+  /** Valor que tiene el teléfono ahora. `null` se interpreta según `currentValueSource`. */
+  currentValue: unknown
+  currentValueSource: CurrentValueSource
   sortOrder: number
   isActive: boolean
   createdAt: string
@@ -205,14 +234,19 @@ export type ParameterInput = {
   name: string
   key?: string | null
   description?: string | null
+  notes?: string | null
   dataType: DataType
   unit?: string | null
   defaultValue?: unknown
   defaultValueSource?: DefaultValueSource
   defaultValueConfidence?: ConfidenceLevel | null
   allowedValues?: string[] | null
+  currentValue?: unknown
+  currentValueSource?: CurrentValueSource
   sortOrder?: number
   isActive?: boolean
+  /** Solo lo usa la duplicación: conserva el linaje del parámetro de origen. */
+  lineageId?: string
 }
 
 /* ── Configuraciones ─────────────────────────────────────────────────────── */
@@ -329,12 +363,15 @@ export type ExperimentPatch = Partial<Omit<ExperimentInput, 'configurationId'>>
 
 export type ParameterChangeRow = {
   id: string
-  experiment_id: string
+  experiment_id: string | null
   parameter_id: string
   previous_value: unknown
+  previous_value_source: CurrentValueSource | null
   new_value: unknown
+  new_value_source: CurrentValueSource | null
   reason: string | null
   observation: string | null
+  effect: ChangeEffect | null
   path_snapshot: string[] | null
   applied_to_profile: boolean
   created_at: string
@@ -342,12 +379,18 @@ export type ParameterChangeRow = {
 
 export type ParameterChange = {
   id: string
-  experimentId: string
+  /** `null` en cambios sueltos, sin experimento. */
+  experimentId: string | null
   parameterId: string
   previousValue: unknown
+  /** Cómo se interpreta el valor anterior (`default` = valor de librería). */
+  previousValueSource: CurrentValueSource | null
   newValue: unknown
+  newValueSource: CurrentValueSource | null
   reason: string | null
   observation: string | null
+  /** Efecto observado por el usuario, si lo indicó. */
+  effect: ChangeEffect | null
   /** Ruta jerárquica congelada en el momento del cambio. */
   pathSnapshot: string[] | null
   /** `true` si al registrarlo también se actualizó el valor del perfil. */
@@ -356,12 +399,26 @@ export type ParameterChange = {
 }
 
 export type ParameterChangeInput = {
-  experimentId: string
+  experimentId?: string | null
   parameterId: string
   previousValue: unknown
+  previousValueSource?: CurrentValueSource | null
   newValue: unknown
+  newValueSource?: CurrentValueSource | null
   reason?: string | null
   observation?: string | null
+  effect?: ChangeEffect | null
   pathSnapshot?: string[] | null
-  appliedToProfile: boolean
+  appliedToProfile?: boolean
+}
+
+/** Cambio del historial con el nombre y la ruta del parámetro ya resueltos. */
+export type ParameterHistoryEntry = ParameterChange & {
+  parameterName: string
+  dataType: DataType
+  unit: string | null
+  /** Ruta calculada al leer; si el nodo se renombró se usa `pathSnapshot`. */
+  path: string[]
+  /** `true` si el parámetro sigue en la versión (no retirado). */
+  parameterActive: boolean
 }

@@ -5,19 +5,19 @@ import { PageHeader } from '../components/layout/PageHeader'
 
 const WORKFLOW = [
   {
-    title: 'Registra el catálogo',
+    title: 'Crea la cámara y su versión',
     description:
-      'Cada familia de GCam —LMC, AGC, BSG o cualquier otra— con sus versiones. Cada versión conserva su propia estructura de parámetros.',
+      'Cada familia de GCam —LMC, AGC, BSG o cualquier otra— con sus versiones. Al cambiar de versión puedes duplicar los ajustes y partir de ahí.',
   },
   {
-    title: 'Documenta la estructura',
+    title: 'Replica los ajustes',
     description:
-      'Categorías dentro de categorías, sin límite de profundidad, con el valor predeterminado de cada parámetro y la procedencia de ese valor.',
+      'Crea un nivel por pantalla del menú (Photo Processing, Main Camera…) y añade dentro sus parámetros con el valor que tiene el teléfono.',
   },
   {
-    title: 'Prueba y registra',
+    title: 'Prueba y deja rastro',
     description:
-      'Aplica los cambios a mano en el teléfono y anota aquí qué cambiaste, desde qué valor, a qué valor y qué observaste.',
+      'Cambia un valor y anota qué esperabas y qué pasó. El historial conserva el antes, el después, tu comentario y el efecto.',
   },
 ]
 
@@ -43,7 +43,7 @@ export const HomePage = () => (
   <>
     <PageHeader
       title="Inicio"
-      description="Catálogo y laboratorio de configuraciones GCam. Documenta parámetros, conserva perfiles y registra cada experimento con su historial."
+      description="Espejo de los ajustes de tus cámaras GCam: niveles, parámetros, valores y un historial de qué cambió y si mejoró."
       actions={
         <ButtonLink to="/cameras" variant="primary" leadingIcon={<Camera aria-hidden="true" className="size-4" />}>
           Ir a Mis cámaras

@@ -27,7 +27,7 @@ export const VersionOverviewPage = () => {
   return (
     <VersionSection
       title="Resumen"
-      description="Una versión conserva su propia estructura de parámetros, sus perfiles de configuración y sus experimentos."
+      description="Una versión conserva su propia estructura de ajustes y todo su historial."
     >
       {status === 'loading' && (
         <div className="flex items-center gap-2 px-1 py-4 text-sm text-ink-muted" role="status">
@@ -63,13 +63,9 @@ export const VersionOverviewPage = () => {
                   <dt className="ui-label w-32 shrink-0">Estructura</dt>
                   <dd>
                     {version.nodeCount > 0
-                      ? `${version.nodeCount} ${version.nodeCount === 1 ? 'nodo' : 'nodos'} de parámetros`
-                      : 'Sin estructura creada'}
+                      ? `${version.nodeCount} ${version.nodeCount === 1 ? 'nivel' : 'niveles'} de ajustes`
+                      : 'Sin niveles creados'}
                   </dd>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-4">
-                  <dt className="ui-label w-32 shrink-0">Perfiles</dt>
-                  <dd>{version.configurationCount}</dd>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-4">
                   <dt className="ui-label w-32 shrink-0">Creada</dt>

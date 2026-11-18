@@ -1,8 +1,8 @@
 # Laboratorio de Configuraciones GCam
 
 Aplicación web privada para documentar cámaras GCam (LMC, AGC, BSG y otras), sus
-versiones, el árbol jerárquico de parámetros, los perfiles de configuración y los
-experimentos realizados.
+versiones y el **espejo de sus ajustes**: los niveles del menú, los parámetros con
+el valor que tiene el teléfono, notas y el historial de qué se cambió y si mejoró.
 
 Es un **catálogo y laboratorio de documentación**. No modifica la app GCam del
 teléfono y **no almacena fotos ni videos**.
@@ -41,16 +41,19 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - Etapa 15 — despliegue en Vercel: **completa**. Publicada en
   `https://gcam-omega.vercel.app` (SPA + API en el mismo proyecto); login, CRUD real,
   RLS, rutas profundas y móvil verificados en producción (D-036)
+- Etapa 16 — espejo de ajustes: **completa**. Niveles del menú con «Añadir subnivel»
+  y «Añadir parámetro», valor actual (`Default (From Library)` incluido), nota por
+  parámetro e historial con antes/después, comentario y efecto; duplicar versión con
+  valores y comparar por linaje (D-037)
 
 Desplegada en Vercel (plan Hobby) con la API en `/api`; pasos y checklist en
 [`docs/DEPLOY.md`](docs/DEPLOY.md).
-- Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
-sesión (`/login`), lee de Supabase mediante `src/services/` y `Mis cámaras` ya muestra
-datos reales con estados de carga, vacío y error. El resto de vistas siguen siendo
-marcadores de su etapa. El esquema de la base está versionado en `supabase/`; hasta
-aplicarlo, las consultas fallan con un error legible que invita a aplicar migraciones.
+sesión (`/login`), lee de Supabase mediante `src/services/` y todas las vistas del
+espejo de ajustes usan datos reales con estados de carga, vacío y error. El esquema
+de la base está versionado en `supabase/`; hasta aplicarlo, las consultas fallan con
+un error legible que invita a aplicar migraciones.
 
 ## Requisitos
 

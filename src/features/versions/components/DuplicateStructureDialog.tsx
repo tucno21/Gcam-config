@@ -39,6 +39,7 @@ export const DuplicateStructureDialog = ({
   const [sourceId, setSourceId] = useState<string>(sourceVersion?.id ?? withStructure[0]?.id ?? '')
   const [targetId, setTargetId] = useState<string>('')
   const [newLabel, setNewLabel] = useState('')
+  const [includeValues, setIncludeValues] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,7 +71,7 @@ export const DuplicateStructureDialog = ({
       }
       if (!destination) throw new Error('No se encontró la versión de destino.')
 
-      const result = await versionService.duplicateStructure(source.id, destination.id)
+      const result = await versionService.duplicateStructure(source.id, destination.id, { includeValues })
       onDuplicated({ targetId: destination.id, ...result })
       onClose()
     } catch (cause) {
@@ -150,15 +151,29 @@ export const DuplicateStructureDialog = ({
         )}
 
         <div className="rounded-control border border-line bg-surface-sunken px-4 py-3 text-xs leading-relaxed text-ink-muted">
-          <p>La copia crea nodos y parámetros nuevos en la versión de destino, con la misma jerarquía y orden.</p>
-          <p className="mt-1">
-            <strong className="text-ink">No se copian</strong> perfiles, valores, experimentos ni historial: esos
-            datos pertenecen a cada versión.
+          <p>La copia crea niveles y parámetros nuevos en la versión de destino, con la misma jerarquía, orden y estado.</p>
+          <label className="mt-3 flex items-start gap-3 rounded-control border border-line bg-surface px-3 py-2">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-[var(--color-accent)]"
+              checked={includeValues}
+              onChange={(event) => setIncludeValues(event.target.checked)}
+              disabled={busy}
+            />
+            <span>
+              <span className="block text-[13px] text-ink">Copiar también los valores actuales y las notas</span>
+              <span className="mt-0.5 block text-[11px] text-ink-faint">
+                Útil para empezar AGC 9.4 con la configuración que ya usas en 8.2 y ajustar desde ahí.
+              </span>
+            </span>
+          </label>
+          <p className="mt-2">
+            <strong className="text-ink">No se copia el historial</strong>: pertenece a la versión donde se probó.
           </p>
           {target && target.nodeCount > 0 && (
             <p className="mt-1 text-danger">
               La versión {target.version} ya tiene {target.nodeCount}{' '}
-              {target.nodeCount === 1 ? 'nodo' : 'nodos'} propios: la copia se añadirá a lo que tenga.
+              {target.nodeCount === 1 ? 'nivel' : 'niveles'} propios: la copia se añadirá a lo que tenga.
             </p>
           )}
         </div>

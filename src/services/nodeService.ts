@@ -22,16 +22,18 @@ import type { NodeInput, NodePatch, ParameterNode, ParameterNodeRow } from './ty
  */
 
 const NODE_COLUMNS =
-  'id, camera_version_id, parent_id, name, description, node_type, sort_order, created_at, updated_at' as const
+  'id, camera_version_id, parent_id, lineage_id, name, description, node_type, sort_order, is_active, created_at, updated_at' as const
 
 const toNode = (row: ParameterNodeRow): ParameterNode => ({
   id: row.id,
   cameraVersionId: row.camera_version_id,
   parentId: row.parent_id,
+  lineageId: row.lineage_id,
   name: row.name,
   description: row.description,
   nodeType: row.node_type,
   sortOrder: row.sort_order,
+  isActive: row.is_active,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 })
@@ -184,6 +186,8 @@ export const nodeService = {
           description: input.description?.trim() || null,
           node_type: input.nodeType ?? 'group',
           sort_order: input.sortOrder ?? (await nextSortOrder(input.cameraVersionId, parentId)),
+          is_active: input.isActive ?? true,
+          ...(input.lineageId ? { lineage_id: input.lineageId } : {}),
         })
         .select(NODE_COLUMNS)
         .single()
@@ -205,6 +209,7 @@ export const nodeService = {
       if (patch.description !== undefined) payload.description = patch.description?.trim() || null
       if (patch.nodeType !== undefined) payload.node_type = patch.nodeType
       if (patch.sortOrder !== undefined) payload.sort_order = patch.sortOrder
+      if (patch.isActive !== undefined) payload.is_active = patch.isActive
 
       const { data, error } = await getSupabase()
         .from('parameter_nodes')

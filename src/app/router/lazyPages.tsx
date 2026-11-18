@@ -16,23 +16,17 @@ export const LazyCameraPage = lazy(() =>
 export const LazyVersionOverviewPage = lazy(() =>
   import('../../features/versions/pages/VersionOverviewPage').then((module) => ({ default: module.VersionOverviewPage })),
 )
-export const LazyHierarchyPage = lazy(() =>
-  import('../../features/hierarchy/pages/HierarchyPage').then((module) => ({ default: module.HierarchyPage })),
+export const LazySettingsPage = lazy(() =>
+  import('../../features/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })),
 )
-export const LazyConfigurationsPage = lazy(() =>
-  import('../../features/configurations/pages/ConfigurationsPage').then((module) => ({ default: module.ConfigurationsPage })),
-)
-export const LazyExperimentsPage = lazy(() =>
-  import('../../features/experiments/pages/ExperimentsPage').then((module) => ({ default: module.ExperimentsPage })),
+export const LazyComparePage = lazy(() =>
+  import('../../features/settings/pages/ComparePage').then((module) => ({ default: module.ComparePage })),
 )
 export const LazyHistoryPage = lazy(() =>
-  import('../../features/history/pages/HistoryPage').then((module) => ({ default: module.HistoryPage })),
-)
-export const LazyAssistantPage = lazy(() =>
-  import('../../features/assistant/pages/AssistantPage').then((module) => ({ default: module.AssistantPage })),
+  import('../../features/settings/pages/HistoryPage').then((module) => ({ default: module.HistoryPage })),
 )
 export const LazyParameterPage = lazy(() =>
-  import('../../features/parameters/pages/ParameterPage').then((module) => ({ default: module.ParameterPage })),
+  import('../../features/settings/pages/ParameterDetailPage').then((module) => ({ default: module.ParameterDetailPage })),
 )
 
 const LoginChunk = lazy(() => import('../../features/auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })))

@@ -191,15 +191,18 @@ export const versionService = {
   },
 
   /**
-   * Duplica la **estructura de parámetros** de una versión en otra (ambas de la
-   * misma cámara y cuenta). Es una acción explícita de copia: jamás se ejecuta
-   * de forma automática ni al crear una versión.
+   * Duplica la **estructura de ajustes** de una versión en otra (misma cámara).
+   * Es una acción explícita: jamás se ejecuta sola ni al crear una versión.
    *
-   * Copia nodos (conservando jerarquía y `sort_order`) y la definición de sus
-   * parámetros, incluido `default_value` documentado. **No** copia perfiles,
-   * valores, experimentos ni historial: esos datos son de cada versión.
+   * Copia nodos (jerarquía, orden, estado y `lineage_id`) y la definición de sus
+   * parámetros, incluidos `lineage_id`, notas y —si se pide— el valor actual.
+   * **No** copia historial ni experimentos: esos datos pertenecen a cada versión.
    */
-  async duplicateStructure(sourceVersionId: string, targetVersionId: string): Promise<{ nodes: number; parameters: number }> {
+  async duplicateStructure(
+    sourceVersionId: string,
+    targetVersionId: string,
+    options?: { includeValues?: boolean },
+  ): Promise<{ nodes: number; parameters: number }> {
     try {
       if (sourceVersionId === targetVersionId) {
         throw new AppError('validation', 'Elige una versión de destino distinta a la de origen.')
@@ -230,6 +233,8 @@ export const versionService = {
             description: node.description,
             nodeType: node.nodeType,
             sortOrder: node.sortOrder,
+            isActive: node.isActive,
+            lineageId: node.lineageId,
           })
           idMap.set(node.id, copy.id)
           created += 1 + (await walk(node.id))
@@ -243,9 +248,11 @@ export const versionService = {
       for (const parameter of parameters) {
         await parameterService.create({
           nodeId: idMap.get(parameter.nodeId) ?? '',
+          lineageId: parameter.lineageId,
           key: parameter.key,
           name: parameter.name,
           description: parameter.description,
+          notes: parameter.notes,
           dataType: parameter.dataType,
           unit: parameter.unit,
           defaultValue: parameter.defaultValue ?? undefined,
@@ -254,6 +261,8 @@ export const versionService = {
           allowedValues: parameter.allowedValues,
           sortOrder: parameter.sortOrder,
           isActive: parameter.isActive,
+          currentValue: options?.includeValues ? (parameter.currentValue ?? null) : null,
+          currentValueSource: options?.includeValues ? parameter.currentValueSource : 'unknown',
         })
       }
 

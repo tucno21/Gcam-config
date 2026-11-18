@@ -22,6 +22,7 @@ antes de la siguiente.
 | 13 | Import / export | ✅ | round-trip JSON sin perder relaciones |
 | 14 | Calidad y seguridad | ✅ | pruebas funcionales, de seguridad y responsive ejecutadas |
 | 15 | Despliegue en Vercel | ✅ | SPA rewrites, RLS verificado en producción, móvil OK |
+| 16 | Espejo de ajustes | ✅ | niveles ilimitados con dos acciones, valor actual con comentario e historial, duplicar y comparar versiones |
 
 ## Pendientes de decisión del usuario
 
@@ -30,16 +31,17 @@ antes de la siguiente.
 - **Backend de la API** (Etapa 11): resuelto con **Vercel Functions** (`api/`).
 - **SDK de MCP** (Etapa 12): resuelto con `@modelcontextprotocol/sdk` + `zod`, servidor
   MCP local por stdio.
-- **Vite 7**: los avisos *high* de `npm audit` son del servidor de desarrollo de Vite 6
-  y exigen salto de major. Riesgo aceptado y documentado (D-035); revisar en la
-  siguiente actualización planificada.
+- **Vite 7**: los avisos *high* de `npm audit` eran del servidor de desarrollo de
+  Vite 6 y exigían salto de major (D-035). Con el árbol actual `npm audit` queda sin
+  vulnerabilidades; el salto de major se hará cuando exista una razón funcional.
 
 ## Riesgos conocidos
 
-- React 19 + `@dnd-kit`: posibles advertencias de peer dependencies al instalar
-  (no se cambiarán versiones para forzarlo).
+- React 19 + dependencias: no se cambian versiones para forzar peers. `@dnd-kit` se
+  retiró en la Etapa 16 al desaparecer el editor de árbol.
 - Tailwind v4 (CSS-first): no hay `tailwind.config.js`; el tema se define con
   `@theme`.
 - TypeScript 7.0.2 con `erasableSyntaxOnly`: prohibido `enum`.
 - Planes gratuitos (Supabase/Vercel): límites y pausa por inactividad; no prometer
   servicio gratuito ilimitado.
+

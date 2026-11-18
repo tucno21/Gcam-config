@@ -7,11 +7,17 @@ No sustituye a la base de datos ni contiene claves; son datos del catálogo.
 
 | Acción | Dónde | Contenido |
 |---|---|---|
-| Exportar cámara | Lista de cámaras (icono) y ficha de la cámara (botón) | Cámara, todas sus versiones, árbol, parámetros, perfiles, valores y, si existen, experimentos con historial |
-| Exportar perfil | Lista de perfiles (icono) | Perfil con sus valores y las definiciones de los parámetros usados, con ruta |
+| Exportar cámara | Lista de cámaras (icono) y ficha de la cámara (botón) | Cámara, todas sus versiones, niveles, parámetros (con valor actual, notas y linaje), historial de valores y, si existen, perfiles y experimentos heredados |
+| Exportar perfil | Lista de perfiles (icono) | Perfil con sus valores y las definiciones de los parámetros usados, con ruta (herencia de la Etapa 9) |
 
 Nombre del archivo: `gcam-<slug>-<fecha>.json` y
 `gcam-<slug-cámara>-<perfil>-<fecha>.json` para perfiles.
+
+> Desde la Etapa 16 la interfaz ya no crea perfiles ni experimentos (D-037), pero
+> los respaldos antiguos siguen importándose y se exportan los datos heredados si
+> existen. Los campos nuevos (`lineageId`, `notes`, `currentValue`,
+> `currentValueSource`, `isActive` en niveles y `history`) son **opcionales** al
+> importar, así que un archivo de la Etapa 13 sigue siendo válido.
 
 ## Formato `gcam-camera-backup` (versión de esquema 1)
 
