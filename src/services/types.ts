@@ -90,6 +90,10 @@ export type CameraVersion = {
   notes: string | null
   isDefault: boolean
   isActive: boolean
+  /** Nodos del árbol (estructura de parámetros) de esta versión. */
+  nodeCount: number
+  /** Perfiles de configuración de esta versión. */
+  configurationCount: number
   createdAt: string
   updatedAt: string
 }

@@ -294,6 +294,14 @@ Una etapa está terminada cuando:
   detalle. Verificado con E2E real en Chrome headless (crear, validar vacío,
   editar, archivar, reactivar, detalle, eliminar y búsqueda sin resultados) sin
   errores de consola; la base quedó sin datos de prueba.
+- **Etapa 6** — versiones: completada. CRUD de versiones por cámara con etiqueta
+  única (error legible en duplicados), versión predeterminada única, archivar sin
+  pérdida de datos, borrado solo si la versión está vacía, conteos de estructura y
+  perfiles por versión (embed count), ficha Resumen con datos reales y duplicación
+  de estructura explícita y revisable (D-027). Verificado con E2E real en Chrome
+  headless: crear, duplicado de etiqueta bloqueado, editar, duplicar estructura a
+  versión existente y a nueva, predeterminar, archivar, borrado bloqueado con
+  explicación y ficha; sin errores de consola y base limpia.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario

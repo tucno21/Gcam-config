@@ -20,6 +20,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   alojado con el usuario real (19 comprobaciones)
 - Etapa 5 — catálogo de cámaras: completa. CRUD completo desde la interfaz con
   búsqueda, filtros, archivado y ficha de detalle; verificado con E2E en navegador
+- Etapa 6 — versiones: completa. CRUD de versiones por cámara, predeterminada
+  única, archivado, borrado seguro y duplicación de estructura explícita (D-027)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige

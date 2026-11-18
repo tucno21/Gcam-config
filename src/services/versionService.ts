@@ -1,24 +1,38 @@
-import { toAppError } from '../lib/errors/AppError'
+import { AppError, toAppError } from '../lib/errors/AppError'
 import { getSupabase } from '../lib/supabase/client'
 import { resolvePagination } from './queryHelpers'
-import type { ActiveFilter, CameraVersion, CameraVersionRow, Page, VersionInput } from './types'
+import { nodeService } from './nodeService'
+import { parameterService } from './parameterService'
+import type { ActiveFilter, CameraVersion, CameraVersionRow, Page, ParameterNode, VersionInput } from './types'
 
 /**
  * Versiones de una cámara. Cada versión mantiene su propio árbol de parámetros,
  * sus perfiles y sus experimentos.
  *
  * Contrato:
- * - `listByCamera` pagina (por defecto 25, máximo 100) y ordena por etiqueta.
+ * - `listByCamera` pagina (por defecto 25, máximo 100), ordena por etiqueta y trae
+ *   conteos de estructura (`nodeCount`) y perfiles (`configurationCount`).
  * - `setDefault` desmarca la versión anterior y marca la nueva; si el segundo
  *   paso falla, la cámara puede quedar sin versión predeterminada (no hay
  *   transacción en el cliente). La vista debe pedir reintento.
+ * - `duplicateStructure` copia la estructura de una versión a otra **solo** cuando
+ *   la vista lo pide explícitamente; nunca copia perfiles ni historial.
  * - Los errores se traducen siempre a `AppError`.
  */
 
 const VERSION_COLUMNS =
   'id, camera_id, version, release_label, notes, is_default, is_active, created_at, updated_at' as const
 
-const toVersion = (row: CameraVersionRow): CameraVersion => ({
+/** Columnas con conteos: estructura creada y perfiles registrados. */
+const VERSION_LIST_COLUMNS =
+  `${VERSION_COLUMNS}, parameter_nodes(count), configurations(count)` as const
+
+type VersionListRow = CameraVersionRow & {
+  parameter_nodes?: Array<{ count: number }>
+  configurations?: Array<{ count: number }>
+}
+
+const toVersion = (row: CameraVersionRow, nodeCount = 0, configurationCount = 0): CameraVersion => ({
   id: row.id,
   cameraId: row.camera_id,
   version: row.version,
@@ -26,9 +40,14 @@ const toVersion = (row: CameraVersionRow): CameraVersion => ({
   notes: row.notes,
   isDefault: row.is_default,
   isActive: row.is_active,
+  nodeCount,
+  configurationCount,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 })
+
+const toVersionFromList = (row: VersionListRow): CameraVersion =>
+  toVersion(row, row.parameter_nodes?.[0]?.count ?? 0, row.configurations?.[0]?.count ?? 0)
 
 const updateVersion = async (id: string, input: Partial<VersionInput>): Promise<CameraVersion> => {
   const patch: Partial<CameraVersionRow> = {}
@@ -62,7 +81,7 @@ export const versionService = {
 
       let query = getSupabase()
         .from('camera_versions')
-        .select(VERSION_COLUMNS, { count: 'exact' })
+        .select(VERSION_LIST_COLUMNS, { count: 'exact' })
         .eq('camera_id', cameraId)
       if (active === 'active') query = query.eq('is_active', true)
       if (active === 'archived') query = query.eq('is_active', false)
@@ -71,28 +90,28 @@ export const versionService = {
         .order('is_default', { ascending: false })
         .order('version', { ascending: false })
         .range(from, to)
-        .returns<CameraVersionRow[]>()
+        .returns<VersionListRow[]>()
 
       if (error) throw error
 
-      return { items: (data ?? []).map(toVersion), total: count ?? 0, limit, offset }
+      return { items: (data ?? []).map(toVersionFromList), total: count ?? 0, limit, offset }
     } catch (error) {
       throw toAppError(error)
     }
   },
 
-  /** Versión por id. Lanza `not_found` si no existe o pertenece a otra cuenta. */
+  /** Versión por id (con conteos). Lanza `not_found` si no existe o es de otra cuenta. */
   async getById(id: string): Promise<CameraVersion> {
     try {
       const { data, error } = await getSupabase()
         .from('camera_versions')
-        .select(VERSION_COLUMNS)
+        .select(VERSION_LIST_COLUMNS)
         .eq('id', id)
         .single()
-        .returns<CameraVersionRow>()
+        .returns<VersionListRow>()
 
       if (error) throw error
-      return toVersion(data)
+      return toVersionFromList(data)
     } catch (error) {
       throw toAppError(error)
     }
@@ -166,6 +185,79 @@ export const versionService = {
     try {
       const { error } = await getSupabase().from('camera_versions').delete().eq('id', id)
       if (error) throw error
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
+
+  /**
+   * Duplica la **estructura de parámetros** de una versión en otra (ambas de la
+   * misma cámara y cuenta). Es una acción explícita de copia: jamás se ejecuta
+   * de forma automática ni al crear una versión.
+   *
+   * Copia nodos (conservando jerarquía y `sort_order`) y la definición de sus
+   * parámetros, incluido `default_value` documentado. **No** copia perfiles,
+   * valores, experimentos ni historial: esos datos son de cada versión.
+   */
+  async duplicateStructure(sourceVersionId: string, targetVersionId: string): Promise<{ nodes: number; parameters: number }> {
+    try {
+      if (sourceVersionId === targetVersionId) {
+        throw new AppError('validation', 'Elige una versión de destino distinta a la de origen.')
+      }
+
+      const [source, target] = await Promise.all([this.getById(sourceVersionId), this.getById(targetVersionId)])
+      if (source.cameraId !== target.cameraId) {
+        throw new AppError('validation', 'Ambas versiones deben pertenecer a la misma cámara.')
+      }
+
+      // Nodos en orden padres-primero para poder remapear `parent_id`.
+      const { items: nodes } = await nodeService.listByVersion(sourceVersionId)
+      const byParent = new Map<string | null, ParameterNode[]>()
+      for (const node of nodes) {
+        const siblings = byParent.get(node.parentId) ?? []
+        siblings.push(node)
+        byParent.set(node.parentId, siblings)
+      }
+
+      const idMap = new Map<string, string>()
+      const walk = async (parentId: string | null): Promise<number> => {
+        let created = 0
+        for (const node of byParent.get(parentId) ?? []) {
+          const copy = await nodeService.create({
+            cameraVersionId: targetVersionId,
+            parentId: parentId === null ? null : (idMap.get(parentId) ?? null),
+            name: node.name,
+            description: node.description,
+            nodeType: node.nodeType,
+            sortOrder: node.sortOrder,
+          })
+          idMap.set(node.id, copy.id)
+          created += 1 + (await walk(node.id))
+        }
+        return created
+      }
+      const nodeCount = await walk(null)
+
+      // Definición de parámetros de la versión de origen, apuntando a los nodos nuevos.
+      const parameters = await parameterService.listByVersion(sourceVersionId)
+      for (const parameter of parameters) {
+        await parameterService.create({
+          nodeId: idMap.get(parameter.nodeId) ?? '',
+          key: parameter.key,
+          name: parameter.name,
+          description: parameter.description,
+          dataType: parameter.dataType,
+          unit: parameter.unit,
+          defaultValue: parameter.defaultValue ?? undefined,
+          defaultValueSource: parameter.defaultValueSource,
+          defaultValueConfidence: parameter.defaultValueConfidence,
+          allowedValues: parameter.allowedValues,
+          sortOrder: parameter.sortOrder,
+          isActive: parameter.isActive,
+        })
+      }
+
+      return { nodes: nodeCount, parameters: parameters.length }
     } catch (error) {
       throw toAppError(error)
     }

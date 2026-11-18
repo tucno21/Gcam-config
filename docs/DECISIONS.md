@@ -368,3 +368,24 @@ diseño; si aun así ocurre (`23503`), el mensaje sugiere archivar. El mismo cri
 se aplicará a versiones (Etapa 6) y perfiles (Etapa 9). El slug se genera a partir
 del nombre (`lib/helpers/slugify`) mientras el usuario no lo edite a mano.
 
+---
+
+## D-027 — La duplicación de estructura siempre es explícita y revisable
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+Crear una versión **nunca** copia parámetros de otra. La copia existe solo como
+acción explícita («Duplicar estructura») con diálogo propio: muestra la versión de
+origen con su conteo de nodos, la de destino (existente o nueva) y advierte qué se
+copia (nodos y definición de parámetros, con jerarquía y orden) y qué no (perfiles,
+valores, experimentos e historial). Si la destino ya tiene nodos propios, se avisa
+que la copia se añadirá a lo que tenga.
+
+**Motivo:** la tarea lo exige — evitar que el usuario piense que una versión nueva
+«hereda» datos — y la copia debe poder revisarse antes de guardar.
+
+**Consecuencia:** `versionService.duplicateStructure` es el único camino de copia y
+trabaja por inserción ordenada (padres primero) con remapeo de `parent_id`; los ids
+nuevos garantizan que las versiones jamás compartan filas. Las acciones destructivas
+o masivas futuras seguirán este patrón de confirmación con impacto detallado.
+

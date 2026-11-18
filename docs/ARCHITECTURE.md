@@ -72,6 +72,7 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ |
 | `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | Etapa 7 |
 | `src/features/cameras/` | catálogo real: página, `CameraFormDialog` y validación del dominio | ✅ Etapa 5 |
+| `src/features/versions/` | versiones reales: formulario, duplicación de estructura, ficha (resumen) | ✅ Etapa 6 |
 | `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |
 | `src/hooks/` | `usePageTitle`, `useAsyncData`, `useWorkspaceSelection`, `useDebouncedValue` | ✅ |
 | `src/lib/helpers/` | funciones puras (`cn`, `shortId`, `slugify`, `formatDate`) | ✅ |
