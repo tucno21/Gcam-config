@@ -4,11 +4,13 @@ import { Button } from '../../../components/common/Button'
 import { PendingStage } from '../../../components/feedback/PendingStage'
 import { useToast } from '../../../components/feedback/ToastContext'
 import { PageHeader } from '../../../components/layout/PageHeader'
+import { useWorkspaceSelection } from '../../../hooks/useWorkspaceSelection'
 import { shortId } from '../../../lib/helpers/shortId'
 
 export const CameraPage = () => {
   const { cameraId } = useParams()
   const { notify } = useToast()
+  useWorkspaceSelection(cameraId)
 
   return (
     <>

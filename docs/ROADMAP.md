@@ -10,7 +10,7 @@ antes de la siguiente.
 | 1 | AGENTS.md y documentación | ✅ | una sesión nueva puede continuar sin contexto previo |
 | 2 | Arquitectura frontend | ✅ | rutas y sistema visual funcionan en desktop y móvil, 0 errores de consola, 0 deps no autorizadas |
 | 3 | Modelo de datos y RLS | ✅ | migraciones reproducibles + RLS probado anónimo/autenticado |
-| 4 | Capa de datos | ⏳ pendiente | un CRUD funciona extremo a extremo con errores legibles |
+| 4 | Capa de datos | ✅ | un CRUD funciona extremo a extremo con errores legibles |
 | 5 | Catálogo de cámaras | ⏳ pendiente | CRUD completo con persistencia real |
 | 6 | Versiones | ⏳ pendiente | varias versiones por cámara, árbol y datos aislados |
 | 7 | Jerarquía ilimitada | ⏳ pendiente | 6 niveles, mover ramas, sin ciclos, persiste al recargar |
@@ -25,16 +25,15 @@ antes de la siguiente.
 
 ## Pendientes de decisión del usuario
 
-- **Base de datos de la Etapa 3**: el esquema, los triggers y las políticas ya se
-  ejecutaron sobre PostgreSQL 18 con un shim de auth y la suite de aislamiento pasó
-  completa. Falta aplicarlos al proyecto de Supabase definitivo: crear el proyecto y
-  correr `db push` (ver `docs/SETUP-SUPABASE.md`), o levantar la base local con Docker.
 - **Runner de tests** (Etapa 14): hoy no existe; cualquier suite automatizada requiere
   autorización para agregar dependencias.
 - **Backend de la API** (Etapa 11): Vercel Functions (`api/`) vs. Supabase Edge
   Functions.
 - **SDK de MCP** (Etapa 12): probablemente `@modelcontextprotocol/sdk`, no autorizado
   todavía.
+- **Code-splitting**: el bundle pasó de 357 kB a 592 kB (174 kB gzip) al entrar
+  `supabase-js`. El warning de Vite no bloquea; se propone resolver con lazy-loading
+  de rutas en la Etapa 14, salvo decisión contraria.
 
 ## Riesgos conocidos
 

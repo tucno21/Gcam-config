@@ -5,4 +5,15 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    // Escucha en todas las interfaces para poder entrar desde la red/túnel.
+    host: true,
+    // Hosts autorizados a entrar al servidor de desarrollo.
+    // Vite bloquea por defecto cualquier Host ajeno (protección DNS rebinding).
+    allowedHosts: ['reactest.zonadocente.com', '.zonadocente.com'],
+  },
+  preview: {
+    host: true,
+    allowedHosts: ['reactest.zonadocente.com', '.zonadocente.com'],
+  },
 })

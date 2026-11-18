@@ -245,6 +245,13 @@ que un `delete` accidental sobre el historial falle de forma explícita.
 **Consecuencia:** cualquier tabla nueva debe recibir `revoke` para `anon` y sus
 `grant` explícitos en la misma migración que la crea.
 
+> **Corrección (D-025):** en el proyecto alojado de Supabase los *default privileges*
+> conceden `ALL` a `authenticated` al crear cualquier tabla, incluidos `update`,
+> `delete` y `truncate`. La migración `20261118120300_privileges_hardening.sql`
+> revoca esos extras: el historial quedó en `select`/`insert` y ninguna tabla
+> conserva `references`/`trigger`/`truncate`. Toda migración nueva debe terminar con
+> la misma revocación.
+
 ---
 
 ## D-021 — Semilla ficticia opcional, nunca automática en remoto
@@ -260,3 +267,83 @@ parámetros de LMC, AGC o BSG. `db push` no ejecuta semillas, lo cual es deseado
 
 **Consecuencia:** la interfaz de las etapas 5–10 se construye con datos reales del
 usuario; la semilla es solo una ayuda local.
+
+---
+
+## D-022 — Clave pública «publishable» y nombre de la variable de entorno
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+El proyecto usa el sistema nuevo de claves de Supabase: la variable documentada es
+`VITE_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`). El cliente acepta además
+`VITE_SUPABASE_ANON_KEY` como respaldo para proyectos antiguos. Ambas son claves
+públicas y su alcance lo decide RLS.
+
+**Motivo:** es la clave que emite hoy el panel de Supabase; mantener el nombre
+`anon` como único nombre obligaba a renombrar valores a mano.
+
+**Consecuencia:** nunca se añade una variable con clave secreta. Si el panel entrega
+una `secret key`, no se usa en el frontend bajo ningún concepto.
+
+---
+
+## D-023 — `AppError` como único contrato de error
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+`lib/errors/AppError.ts` define `AppError` (código + mensaje legible) y `toAppError()`,
+que traduce códigos de PostgreSQL/PostgREST, errores de Auth, fallos de red y errores
+de Axios. Los servicios son el único punto que llama a `toAppError`; las vistas solo
+muestran `error.message`.
+
+**Motivo:** el criterio de la etapa exige errores entendibles sin dispersar `if`
+sobre códigos en cada componente.
+
+**Consecuencia:** un error nuevo que merezca mensaje propio se añade al mapa de
+`AppError.ts`, no en la vista. Los detalles técnicos van en `details` y no se muestran.
+
+---
+
+## D-024 — Acceso privado con Supabase Auth y sesión persistida por `supabase-js`
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+RLS exige `authenticated`, así que la Etapa 4 incluye la pantalla `/login`, la guarda
+`RequireSession` y un `AuthProvider`. La sesión la persiste `supabase-js` en el
+almacenamiento del navegador bajo la clave `gcam-lab-session`; la aplicación no copia
+tokens a Zustand, a `localStorage` propio ni a la URL.
+
+**Motivo:** sin sesión no se puede cumplir el criterio «un CRUD funciona de extremo a
+extremo»; ocultar botones no es seguridad.
+
+**Consecuencia:** la prohibición de guardar tokens en el navegador se interpreta como
+prohibición de **duplicar** tokens o guardar claves secretas; el almacenamiento de
+sesión queda delegado a la librería oficial. Los stores de Zustand solo contienen
+estado de interfaz.
+
+---
+
+## D-025 — Revocar los privilegios por defecto de Supabase en cada migración
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+El proyecto alojado de Supabase crea cada tabla con `grant all` implícito a
+`authenticated` y `service_role` (*default privileges* del proyecto). Eso incluía
+`update`, `delete` y `truncate` sobre `parameter_changes`, la tabla append-only.
+En la base local de pruebas esos privilegios no existen, por eso la suite pasó allí
+y el hueco solo apareció al verificar el CRUD con un usuario real en el proyecto
+remoto. La migración `20261118120300_privileges_hardening.sql` revoca los extras y
+deja el historial en `select`/`insert`.
+
+**Motivo:** el diseño de la capa de privilegios se validó en una base limpia, no en
+el entorno real de Supabase. La política RLS ya impedía tocar filas del historial
+(la operación terminaba en «0 filas afectadas»), pero el error silencioso no es
+aceptable: sin revocación no hay mensaje claro ni defensa si una política se
+equivoca mañana.
+
+**Consecuencia:** toda migración que cree una tabla termina con la revocación de
+`references`, `trigger` y `truncate` a `authenticated`, `revoke all` a `anon` y, si
+la tabla es append-only, `revoke all` a `authenticated` seguido del `grant`
+explícito. La verificación de privilegios (`information_schema.role_table_grants`)
+pasa a formar parte de la comprobación post-migración en el proyecto remoto.
+

@@ -14,13 +14,17 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - Etapa 0 — auditoría: completa
 - Etapa 1 — documentación base: completa
 - Etapa 2 — estructura, rutas y sistema visual: completa
-- Etapa 3 — modelo de datos y RLS: completa (verificada en PostgreSQL 18; falta
-  aplicarla al proyecto Supabase real)
-- Etapas 4–15: pendientes
+- Etapa 3 — modelo de datos y RLS: completa (verificada en PostgreSQL 18)
+- Etapa 4 — conexión y capa de datos: completa. Servicios, errores legibles, sesión
+  y listado real de cámaras; CRUD de extremo a extremo verificado en el proyecto
+  alojado con el usuario real (19 comprobaciones)
+- Etapas 5–15: pendientes
 
-La navegación, el layout responsive y los componentes base ya funcionan; las vistas
-de datos son marcadores que indican en qué etapa se construyen. El esquema de la base
-está versionado en `supabase/`, pero la app todavía no se conecta a Supabase.
+La navegación, el layout responsive y los componentes base funcionan. La app exige
+sesión (`/login`), lee de Supabase mediante `src/services/` y `Mis cámaras` ya muestra
+datos reales con estados de carga, vacío y error. El resto de vistas siguen siendo
+marcadores de su etapa. El esquema de la base está versionado en `supabase/`; hasta
+aplicarlo, las consultas fallan con un error legible que invita a aplicar migraciones.
 
 ## Requisitos
 
@@ -39,9 +43,12 @@ La app queda en `http://localhost:5173`.
 ## Configuración
 
 1. Copia `.env.example` a `.env.local`.
-2. Rellena los valores de tu proyecto de Supabase (URL y clave **pública/anon**).
+2. Rellena los valores de tu proyecto de Supabase: URL y clave **pública**
+   (`sb_publishable_…`, o `anon` en proyectos antiguos).
 3. Aplica las migraciones de `supabase/migrations/` (ver
-   [`docs/SETUP-SUPABASE.md`](docs/SETUP-SUPABASE.md)).
+   [`docs/SETUP-SUPABASE.md`](docs/SETUP-SUPABASE.md), incluido el camino sin CLI).
+4. Crea tu usuario en **Authentication → Users** (con *Auto Confirm User*) o regístrate
+   desde `/login` y confirma el correo.
 
 ```bash
 cp .env.example .env.local

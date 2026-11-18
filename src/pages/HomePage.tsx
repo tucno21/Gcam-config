@@ -35,7 +35,7 @@ const SCOPE = [
   {
     icon: ShieldCheck,
     title: 'Privado por diseño',
-    description: 'Acceso autenticado y RLS al conectar Supabase (Etapa 03).',
+    description: 'Acceso autenticado y RLS en el proyecto de Supabase.',
   },
 ]
 

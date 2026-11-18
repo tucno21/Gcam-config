@@ -39,26 +39,49 @@ Usuario → form (validación local) → hook de feature → service → Supabas
         UI: loading → error+retry | vacío | contenido
 ```
 
+## Capa de datos (Etapa 4)
+
+- **Entorno**: `src/lib/config/env.ts` lee `VITE_SUPABASE_URL` y
+  `VITE_SUPABASE_PUBLISHABLE_KEY` (o `VITE_SUPABASE_ANON_KEY` como respaldo). Si
+  faltan, el cliente lanza `AppError('config')` y la UI lo explica; el bundle no se
+  rompe al arrancar.
+- **Cliente**: `src/lib/supabase/client.ts` es el único `createClient`. La sesión la
+  gestiona la librería; la app no copia tokens.
+- **API propia**: `src/lib/axios/client.ts` centraliza `baseURL`, timeout y
+  normalización de errores para la Etapa 11.
+- **Servicios**: cada dominio expone un objeto con funciones y documenta su
+  contrato en el propio archivo (entradas, salida y errores). Toda consulta lleva
+  paginación o un tope explícito; las lecturas completas (árbol) van por lotes y
+  avisan con `truncated` si alcanzan el límite.
+- **Errores**: un solo traductor (`toAppError`) convierte `23505`, `23503`, `23514`,
+  `42501`, `PGRST116`, `PGRST205`, errores de Auth y fallos de red en mensajes en
+  español.
+- **Estados**: `useAsyncData` implementa `idle | loading | success | error` con
+  `reload` para el reintento. Las vistas deciden qué mostrar en vacío.
+
 ## Estructura de carpetas
 
 | Carpeta | Responsabilidad | Estado |
 |---|---|---|
 | `src/app/` | `AppShell`, providers y router | ✅ |
-| `src/app/router/` | rutas y guardas de sesión | ✅ (guardas en Etapa 4) |
+| `src/app/router/` | rutas y guarda de sesión (`RequireSession`) | ✅ |
+| `src/features/auth/` | `AuthProvider`, `useAuth`, `/login` y validación de acceso | ✅ Etapa 4 |
 | `src/components/common/` | `Button`, `ButtonLink`, `IconButton`, `Badge`, `Panel`, `Dialog` | ✅ |
 | `src/components/layout/` | shell, sidebar, topbar móvil, breadcrumbs, cabecera, pestañas | ✅ |
 | `src/components/feedback/` | `Spinner`, `EmptyState`, `ErrorState`, `PendingStage`, toasts | ✅ |
-| `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ (sin formularios aún) |
+| `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ (usado por el acceso) |
 | `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | Etapa 7 |
 | `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |
-| `src/hooks/` | hooks compartidos (`usePageTitle`) | ✅ |
-| `src/lib/supabase/` | cliente y utilidades de sesión | Etapa 4 |
-| `src/lib/axios/` | instancia HTTP e interceptores | Etapa 11 |
+| `src/hooks/` | `usePageTitle`, `useAsyncData`, `useWorkspaceSelection` | ✅ |
+| `src/lib/supabase/` | cliente único de Supabase | ✅ Etapa 4 |
+| `src/lib/axios/` | instancia HTTP e interceptores | ✅ base (la usa la Etapa 11) |
+| `src/lib/errors/` | `AppError` y `toAppError` | ✅ Etapa 4 |
+| `src/lib/config/` | lectura de variables `VITE_*` | ✅ Etapa 4 |
 | `src/lib/constants/` | `app`, `navigation`, `versionSections` (uniones, no enums) | ✅ |
 | `src/lib/helpers/` | funciones puras (`cn`, `shortId`) | ✅ |
 | `src/lib/validation/` | validadores compartidos | Etapa 5 |
-| `src/services/` | un archivo por agregado (`cameraService.ts`, …) | Etapa 4 |
-| `src/stores/` | Zustand: selección actual, filtros, preferencias | Etapa 5 |
+| `src/services/` | `types` + un archivo por agregado (`cameraService`, `versionService`, `nodeService`, `parameterService`, `configurationService`, `experimentService`, `historyService`, `authService`) | ✅ Etapa 4 |
+| `src/stores/` | Zustand: `useWorkspaceStore` (selección) y `useUiStore` (menú móvil) | ✅ Etapa 4 |
 | `src/styles/` | `theme.css` (tokens `@theme`) y `base.css` | ✅ |
 | `src/pages/` | inicio, 404 y error de ruta | ✅ |
 

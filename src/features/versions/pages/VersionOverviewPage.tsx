@@ -3,10 +3,12 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '../../../components/common/Badge'
 import { Panel } from '../../../components/common/Panel'
 import { VERSION_TABS } from '../../../lib/constants/versionSections'
+import { useWorkspaceSelection } from '../../../hooks/useWorkspaceSelection'
 import { VersionSection } from '../components/VersionSection'
 
 export const VersionOverviewPage = () => {
   const { cameraId, versionId } = useParams()
+  useWorkspaceSelection(cameraId, versionId)
   const base = `/cameras/${cameraId ?? ''}/versions/${versionId ?? ''}`
   const sections = VERSION_TABS.filter((tab) => tab.key !== '')
 

@@ -35,9 +35,12 @@ Instalado y fijado en `package.json`:
 | oxlint | 1.94.0 | linter del proyecto (**no** ESLint) |
 | react-router-dom | 7.18.5 | rutas y navegación |
 | lucide-react | 1.75.0 | iconos |
+| zustand | 5.1.0 | estado de interfaz compartido |
+| axios | 1.21.1 | API propia (instancia en `lib/axios/`) |
+| @supabase/supabase-js | 2.109.0 | datos y Auth (cliente en `lib/supabase/`) |
 
-Pendientes de instalar, cada una en la etapa que la use: `zustand`, `axios`,
-`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, `@supabase/supabase-js`.
+Pendientes de instalar, cada una en la etapa que la use: `@dnd-kit/core`,
+`@dnd-kit/sortable`, `@dnd-kit/utilities` (Etapa 7).
 
 **Dependencias autorizadas para agregar cuando la etapa lo requiera** (nada más):
 
@@ -75,11 +78,11 @@ src/
   components/     # reutilizables, sin lógica de negocio
     common/ layout/ feedback/ forms/ tree/
   features/       # un módulo por dominio
-    cameras/ versions/ hierarchy/ parameters/
+    auth/ cameras/ versions/ hierarchy/ parameters/
     configurations/ experiments/ history/ assistant/
   hooks/          # hooks compartidos
-  lib/            # supabase/ axios/ constants/ helpers/ validation/
-  services/       # acceso a datos por dominio
+  lib/            # supabase/ axios/ errors/ config/ constants/ helpers/ validation/
+  services/       # acceso a datos por dominio + types.ts del contrato
   stores/         # Zustand (solo estado de interfaz compartido)
   styles/         # tokens y estilos globales
   pages/          # páginas asociadas a rutas
@@ -145,12 +148,16 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 
 - Toda operación de persistencia vive en `src/services/`, un archivo por dominio:
   `cameraService`, `versionService`, `nodeService`, `parameterService`,
-  `configurationService`, `experimentService`.
+  `configurationService`, `experimentService`, `historyService` y `authService`.
+  Los tipos de fila y de dominio están en `services/types.ts`.
 - Cada servicio documenta su contrato: firma, entradas, salida y errores posibles.
-- Los errores se normalizan a un tipo propio (`AppError` con `code` y `message`
-  legible) en un único lugar; las vistas solo muestran el mensaje.
+  Devuelve dominio en `camelCase`; `*Row` (snake_case) no sale de `services/`.
+- Los errores se normalizan con `toAppError()` a `AppError` (`code` + `message`
+  legible) en el propio servicio; las vistas solo muestran el mensaje y ofrecen
+  reintentar.
 - Toda consulta lleva límite/paginación. Prohibido `select('*')` masivo sin filtro
-  ni límite en tablas grandes.
+  ni límite en tablas grandes. Las lecturas completas (árbol) van por lotes con tope
+  y exponen `truncated`.
 - Zustand solo guarda estado de interfaz (cámara/versión/perfil seleccionados,
   filtros, preferencias de navegación). **La base de datos es la fuente de verdad**;
   no se duplican registros persistidos en el store.
@@ -159,9 +166,13 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 
 - Variables de entorno con prefijo `VITE_` (expuestas al navegador). Nombre y valor
   ficticio en `.env.example`; valores reales solo en `.env.local` (ignorado por git).
+  Nombres: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (o
+  `VITE_SUPABASE_ANON_KEY` como respaldo) y `VITE_API_BASE_URL` (Etapa 11).
 - **Prohibido** `service_role` o cualquier clave privilegiada en el frontend.
-- Prohibido guardar secretos, tokens o claves en Zustand, `localStorage` o en el
-  repositorio.
+- Prohibido guardar secretos, tokens o claves en Zustand, `localStorage` propio o en
+  el repositorio. La **sesión** la persiste `supabase-js` (D-024); la app no la copia.
+- Todo acceso a datos exige sesión: `/login` + `RequireSession`. La guarda es UX; la
+  seguridad real es RLS.
 - RLS **activado** en toda tabla expuesta al cliente, con políticas basadas en
   `auth.uid()`. Un usuario autenticado solo accede a sus filas, salvo catálogos
   explícitamente públicos.
@@ -270,6 +281,19 @@ Una etapa está terminada cuando:
 - **Etapa 3** — modelo de datos y RLS: completada (`supabase/migrations/`,
   `seed.sql`, `tests/rls.sql`, `docs/SETUP-SUPABASE.md`). Verificada sobre
   PostgreSQL 18 con un shim de `auth`/roles: 9 tablas, 34 políticas, 13 triggers y
-  toda la suite de aislamiento en verde. Queda aplicarla al proyecto Supabase real.
-- Sin conexión desde la app: `src/services/`, `src/stores/`, `src/lib/supabase/` y
-  `src/lib/axios/` se crean en la Etapa 4.
+  toda la suite de aislamiento en verde.
+- **Etapa 4** — conexión y capa de datos: implementada. Cliente Supabase único,
+  instancia Axios, `AppError` con `toAppError`, ocho servicios documentados,
+  `useAsyncData`, stores de interfaz, `/login` con Supabase Auth y guarda
+  `RequireSession`; `Mis cámaras` lista datos reales. `npm run build` y
+  `npm run lint` en verde.
+- **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
+  aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
+  incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario
+  real: `anon` → `42501`, CRUD de extremo a extremo en verde (19 comprobaciones) y
+  todos los bloqueos del modelo activos. El acceso administrativo va por el pooler
+  `aws-1-us-east-1.pooler.supabase.com` porque el host directo solo tiene IPv6.
+- **Pendiente operativo**: configurar la URL del sitio en el panel
+  (*Authentication → URL Configuration → Site URL*, p. ej. `http://localhost:5173`)
+  para que los enlaces de correo no caigan en `localhost:3000`. Recomendado resetear
+  la contraseña de la base tras terminarla de usar fuera del panel.

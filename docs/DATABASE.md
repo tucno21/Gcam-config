@@ -1,8 +1,9 @@
 # Modelo de datos
 
-> **Estado:** implementado en la **Etapa 3**. Las migraciones viven en
-> `supabase/migrations/` y este documento es el contrato: si el esquema cambia, se
-> actualiza aquí en el mismo cambio. Cómo aplicarlas: `docs/SETUP-SUPABASE.md`.
+> **Estado:** implementado en la **Etapa 3** y endurecido en la **Etapa 4**
+> (migración de privilegios). Las migraciones viven en `supabase/migrations/` y este
+> documento es el contrato: si el esquema cambia, se actualiza aquí en el mismo
+> cambio. Cómo aplicarlas: `docs/SETUP-SUPABASE.md`.
 
 Base de datos: PostgreSQL de Supabase. Convenciones: `snake_case`, tablas en plural,
 `uuid` como PK (`gen_random_uuid()`), `timestamptz` para fechas, `created_at` /
@@ -280,7 +281,10 @@ Implementado en `20261118120200_rls_policies.sql`.
 - En `update`, el `with check` repite la condición: no se puede «mover» una fila a
   otro dueño ni colgarla de datos ajenos.
 - `parameter_changes`: solo `select` e `insert`. No tiene políticas de `update` ni
-  `delete` y tampoco privilegios de tabla para esas operaciones (doble barrera).
+  `delete` y tampoco privilegios para esas operaciones (doble barrera, reforzada en
+  la migración `20261118120300_privileges_hardening.sql`, ver D-025).
+- Privilegios mínimos: ninguna tabla concede `references`, `trigger` ni `truncate`
+  a `authenticated`; Supabase los concede por defecto y la migración los revoca.
 - `anon` no tiene **ningún** privilegio de tabla: sin sesión la consulta falla con
   `42501` antes de evaluar políticas. `authenticated` recibe exactamente los
   privilegios que sus políticas permiten.

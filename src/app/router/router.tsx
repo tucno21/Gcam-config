@@ -7,30 +7,39 @@ import { ConfigurationsPage } from '../../features/configurations/pages/Configur
 import { ExperimentsPage } from '../../features/experiments/pages/ExperimentsPage'
 import { HistoryPage } from '../../features/history/pages/HistoryPage'
 import { AssistantPage } from '../../features/assistant/pages/AssistantPage'
+import { LoginPage } from '../../features/auth/pages/LoginPage'
 import { HomePage } from '../../pages/HomePage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
 import { AppShell } from '../AppShell'
+import { RequireSession } from './RequireSession'
 
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage />, errorElement: <RouteErrorPage /> },
   {
+    // Toda vista de datos exige sesión; la seguridad real vive en RLS.
     path: '/',
-    element: <AppShell />,
+    element: <RequireSession />,
     children: [
       {
-        // Ruta sin segmento: mantiene el shell y captura errores dentro de él.
-        errorElement: <RouteErrorPage />,
+        element: <AppShell />,
         children: [
-          { index: true, element: <HomePage /> },
-          { path: 'cameras', element: <CamerasPage /> },
-          { path: 'cameras/:cameraId', element: <CameraPage /> },
-          { path: 'cameras/:cameraId/versions/:versionId', element: <VersionOverviewPage /> },
-          { path: 'cameras/:cameraId/versions/:versionId/hierarchy', element: <HierarchyPage /> },
-          { path: 'cameras/:cameraId/versions/:versionId/configurations', element: <ConfigurationsPage /> },
-          { path: 'cameras/:cameraId/versions/:versionId/experiments', element: <ExperimentsPage /> },
-          { path: 'cameras/:cameraId/versions/:versionId/history', element: <HistoryPage /> },
-          { path: 'cameras/:cameraId/versions/:versionId/assistant', element: <AssistantPage /> },
-          { path: '*', element: <NotFoundPage /> },
+          {
+            // Ruta sin segmento: mantiene el shell y captura errores dentro de él.
+            errorElement: <RouteErrorPage />,
+            children: [
+              { index: true, element: <HomePage /> },
+              { path: 'cameras', element: <CamerasPage /> },
+              { path: 'cameras/:cameraId', element: <CameraPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId', element: <VersionOverviewPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/hierarchy', element: <HierarchyPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/configurations', element: <ConfigurationsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/experiments', element: <ExperimentsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/history', element: <HistoryPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/assistant', element: <AssistantPage /> },
+              { path: '*', element: <NotFoundPage /> },
+            ],
+          },
         ],
       },
     ],

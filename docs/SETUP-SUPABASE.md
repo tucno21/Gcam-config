@@ -1,8 +1,10 @@
 # Puesta en marcha de Supabase
 
-**Estado:** Etapa 3. El esquema y las políticas están escritos y se aplican con la
-CLI, pero **todavía no se ejecutaron contra ningún proyecto**: no hay credenciales
-en el repositorio. Este documento explica los dos caminos posibles.
+**Estado:** Etapa 4. El esquema está **aplicado y verificado** en el proyecto
+alojado `yyfgsvcngakunqwgaktb` (9 tablas, 34 políticas, 13 triggers). Las migraciones
+quedaron registradas en `supabase_migrations.schema_migrations`, igual que lo haría
+`supabase db push`, así que futuras migraciones entran por la CLI o por SQL Editor.
+Este documento explica los caminos posibles.
 
 ---
 
@@ -14,11 +16,35 @@ en el repositorio. Este documento explica los dos caminos posibles.
 | `supabase/migrations/20261118120000_init_schema.sql` | 9 tablas, constraints e índices |
 | `supabase/migrations/20261118120100_functions_triggers.sql` | `updated_at`, validación de valores, guardas del árbol, helpers RLS |
 | `supabase/migrations/20261118120200_rls_policies.sql` | RLS, políticas por operación y privilegios |
+| `supabase/migrations/20261118120300_privileges_hardening.sql` | revoca los privilegios por defecto de Supabase (D-025) |
 | `supabase/seed.sql` | semilla **ficticia** y opcional |
 | `supabase/tests/rls.sql` | pruebas de aislamiento e integridad |
 
 Las migraciones se aplican **en orden de nombre** y son reproducibles desde una base
 vacía. No borran datos.
+
+---
+
+## Camino rápido · SQL Editor del panel (sin CLI)
+
+Sirve para aplicar el esquema a un proyecto alojado sin instalar nada. Es el camino
+usado para el proyecto actual:
+
+1. Abre el proyecto en <https://supabase.com/dashboard> → **SQL Editor**.
+2. Pega **completo** el contenido de cada migración y ejecútala, en este orden:
+   1. `supabase/migrations/20261118120000_init_schema.sql`
+   2. `supabase/migrations/20261118120100_functions_triggers.sql`
+   3. `supabase/migrations/20261118120200_rls_policies.sql`
+3. Comprueba en **Table Editor** que existen las 9 tablas y en **Database → Policies**
+   que todas tienen RLS activado.
+4. Crea el usuario con el que entrarás a la app (**Authentication → Users → Add user**,
+   con *Auto Confirm User* marcado) o regístrate desde `/login` y confirma el correo.
+5. Copia la URL y la clave pública (**Settings → API Keys → publishable**) en
+   `.env.local`.
+
+> El SQL Editor ejecuta como dueño de las tablas, por eso puede crear objetos sin
+> sesión. No sustituye a las migraciones versionadas: si el esquema cambia, se crea
+> una migración nueva.
 
 ---
 
@@ -28,6 +54,14 @@ vacía. No borran datos.
   (ignorado por git); `.env.example` solo tiene nombres y valores ficticios.
 - La aplicación usa **solo la clave pública** (`anon` / publishable). La clave
   `service_role` no se usa en ningún punto del frontend ni de este repositorio.
+- La contraseña de la **base de datos** (rol `postgres`) es distinta de la clave de
+  `.env.local`; se restaura en *Project Settings → Database → Database password*.
+  Nunca se guarda en el repositorio.
+- Conexión administrativa a este proyecto: el host directo
+  `db.<ref>.supabase.co` es **solo IPv6**; desde redes sin IPv6 hay que usar el
+  pooler: `aws-1-us-east-1.pooler.supabase.com`, puerto `5432` (sesión), usuario
+  `postgres.<ref>`. La región se ve en *Project Settings → Database → Connection
+  string*.
 - La CLI de Supabase es una **herramienta**, no una dependencia del proyecto. Se usa
   con `npx supabase@latest …` (o una instalación global) y no se agrega a
   `package.json` sin autorización.
@@ -66,7 +100,7 @@ vacía. No borran datos.
    Si `auth.users` está vacío, la semilla no hace nada y lo avisa con un `notice`.
 
 5. Crea `.env.local` a partir de `.env.example` con la URL y la clave pública del
-   proyecto. Esas variables se usan en la Etapa 4.
+   proyecto (`VITE_SUPABASE_PUBLISHABLE_KEY`). La Etapa 4 ya las consume.
 
 6. Comprueba en el panel que las nueve tablas tienen **RLS activado** y que `anon`
    no puede leerlas.
