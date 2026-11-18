@@ -156,6 +156,26 @@ las relaciones y se muestra como breadcrumbs dentro de la vista.
 - Las rutas se derivan del índice; no se guardan.
 - Búsqueda por nombre: muestra coincidencias y sus ancestros, con la rama expandida.
 
+## API externa (Etapa 11)
+
+```text
+api/
+  [...path].ts   # router único de la Vercel Function (Node)
+  _lib/
+    http.ts      # ApiError, respuestas y traducción de errores
+    rest.ts      # autenticación (Auth) y cliente PostgREST por petición
+    validation.ts# UUID, límites, filtros y validación de valores
+    db.ts        # consultas con columnas explícitas y DTO del contrato
+```
+
+- Documentación del contrato: `docs/API.md`.
+- Autenticación: `Authorization: Bearer <access_token>`; se valida con Supabase Auth.
+- Autorización: JWT + RLS; **nunca** `service_role`.
+- Sin dependencias nuevas: `fetch` directo a PostgREST (D-032).
+- Solo lecturas y tres altas controladas; sin operaciones destructivas.
+- `api/` no forma parte del bundle de la SPA; se compila con `tsconfig.api.json`
+  (incluido en `tsc -b`).
+
 ## Estados de UI obligatorios
 
 Toda consulta expone: `idle | loading | success | empty | error`. El error incluye

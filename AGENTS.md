@@ -87,6 +87,9 @@ src/
   styles/         # tokens y estilos globales
   pages/          # páginas asociadas a rutas
 
+api/              # Vercel Functions (API externa, Etapa 11; docs/API.md)
+  [...path].ts    # router único; _lib/ con http, rest, validation y db
+
 supabase/         # base de datos versionada (no se importa desde src/)
   migrations/     # esquema, funciones/triggers y RLS, en orden
   seed.sql        # datos de demostración ficticios y opcionales
@@ -183,8 +186,11 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
   políticas por operación, `revoke` para `anon` y `grant` explícitos para
   `authenticated`.
 - Ocultar un botón no es seguridad: la protección vive en RLS y en la API.
-- La API externa (Etapa 11) valida autenticación, autorización, IDs, tipos y
-  límites de resultados en cada petición.
+- La API externa (Etapa 11) vive en `api/` (Vercel Function única, `docs/API.md`).
+  Valida autenticación con JWT de Supabase, autorización por RLS, UUID, tipos y
+  límites (1–100) en cada petición. **No** usa `service_role` ni depende de
+  `@supabase/supabase-js`: habla con Auth y PostgREST por `fetch` (D-032).
+  Sin endpoints destructivos; los cambios de contrato actualizan `docs/API.md`.
 - No crear buckets de almacenamiento de imágenes.
 
 ## 10. Árbol jerárquico (funcionalidad central)
@@ -337,6 +343,15 @@ Una etapa está terminada cuando:
   cambios. Verificado con E2E: aplicado sí toca el perfil (25), solo historial no lo
   toca, ruta intacta tras renombrar el nodo, editar el experimento no altera el
   perfil, comparación y estadísticas, borrados según dependencias.
+- **Etapa 11** — API segura: completada. Vercel Function única (`api/[...path].ts`)
+  documentada en `docs/API.md`: auth con JWT de Supabase, autorización por RLS sin
+  `service_role`, PostgREST vía `fetch`, validación de UUID/tipos, paginación 1–100
+  con recorte, límites de árbol y valores, y endpoints de lectura más tres altas
+  (experimento, cambio, recomendación). `apply` es `false` por defecto (D-032).
+  Verificada contra el proyecto real con 25 comprobaciones: 401 sin/invalid token,
+  400 en UUID/tipo/limit inválidos, paginación y recorte, cambio aplicado vs solo
+  histórico, recomendación con alcance validado, 404/405 y sin operaciones
+  destructivas; base limpia al terminar.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`

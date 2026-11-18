@@ -30,6 +30,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   con el predeterminado, filtros y restauración explícita (D-030)
 - Etapa 10 — experimentos e historial: completa. Cambios aplicados al perfil o solo
   históricos, ruta congelada, cronología, comparación y estadísticas (D-031)
+- Etapa 11 — API segura: completa. Vercel Function con JWT + RLS, paginación y
+  validación; contrato en `docs/API.md` (D-032)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
@@ -106,6 +108,7 @@ docs/           # arquitectura, modelo de datos, roadmap y decisiones
 - [`docs/DATABASE.md`](docs/DATABASE.md) — modelo relacional, triggers y RLS.
 - [`docs/SETUP-SUPABASE.md`](docs/SETUP-SUPABASE.md) — aplicar migraciones y verificar RLS.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — etapas y estado.
+- [`docs/API.md`](docs/API.md) — API externa para OpenCode/MCP (auth, endpoints, límites).
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decisiones técnicas.
 - [`tarea_gcam.md`](tarea_gcam.md) — alcance funcional completo.
 

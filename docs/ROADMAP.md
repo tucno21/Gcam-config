@@ -17,7 +17,7 @@ antes de la siguiente.
 | 8 | Parámetros | ✅ | tipos correctos, predeterminado ≠ valor de perfil |
 | 9 | Configuraciones | ✅ | perfiles independientes y comparación con predeterminados |
 | 10 | Experimentos e historial | ✅ | cambios con valor anterior/nuevo, ruta histórica y trazabilidad |
-| 11 | API segura | ⏳ pendiente | acceso autenticado, paginado y acotado; sin secretos |
+| 11 | API segura | ✅ | acceso autenticado, paginado y acotado; sin secretos |
 | 12 | OpenCode / MCP | ⏳ pendiente | respuestas basadas en datos reales; escritura limitada |
 | 13 | Import / export | ⏳ pendiente | round-trip JSON sin perder relaciones |
 | 14 | Calidad y seguridad | ⏳ pendiente | pruebas funcionales, de seguridad y responsive ejecutadas |

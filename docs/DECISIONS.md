@@ -484,3 +484,27 @@ Duplicar un experimento copia solo título/objetivo/hipótesis y perfil: el hist
 original no se replica. Borrar un experimento con cambios falla por `23503` (historial
 intocable).
 
+---
+
+## D-032 — API externa en Vercel Functions con JWT + RLS y sin `service_role`
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+La API externa (Etapa 11) vive en `api/` como una única Vercel Function (runtime
+Node) que enruta `[...path]`. Valida el JWT con `GET /auth/v1/user` y consulta
+PostgREST **con el token del usuario**, de modo que RLS sigue siendo la autoridad.
+No existe `service_role` en ningún punto, tampoco en el servidor. Las consultas usan
+`fetch` + PostgREST en lugar de `@supabase/supabase-js` porque el cliente inicializa
+Realtime y exige WebSocket nativo (Node ≥ 22); en Vercel con Node 20 eso falla y
+añadir `ws` habría sido una dependencia no autorizada.
+
+**Motivo:** coste cero, una sola plataforma de despliegue, sin secretos privilegiados
+y con la misma garantía de aislamiento que la app.
+
+**Consecuencia:** la API expone solo lectura salvo tres altas controladas
+(experimento, cambio, recomendación) y ningún `PUT`/`PATCH`/`DELETE`. `apply` es
+`false` por defecto: un cliente externo no cambia un perfil sin pedirlo
+explícitamente. El valor anterior y la ruta congelada los calcula el servidor. Los
+límites (1–100 filas, árbol ≤ 2 000) y la validación de UUID/tipos viven en la API;
+la base valida de nuevo con triggers y RLS.
+
