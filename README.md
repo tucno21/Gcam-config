@@ -38,6 +38,10 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   aditiva con round-trip sin perder relaciones (D-034)
 - Etapa 14 — calidad y seguridad: completa. Rutas lazy con vendors separados,
   45 pruebas con Vitest y auditoría de accesibilidad/responsive sin hallazgos (D-035)
+- Etapa 15 — despliegue en Vercel: en curso (`https://gcam-omega.vercel.app`)
+
+Desplegada en Vercel (plan Hobby) con la API en `/api`; pasos y checklist en
+[`docs/DEPLOY.md`](docs/DEPLOY.md).
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
@@ -62,8 +66,7 @@ La app queda en `http://localhost:5173`.
 
 ## Configuración
 
-1. Copia `.env.example` a `.env.local`.
-2. Rellena los valores de tu proyecto de Supabase: URL y clave **pública**
+1. Copia `.env.example` a `.env.local`.2. Rellena los valores de tu proyecto de Supabase: URL y clave **pública**
    (`sb_publishable_…`, o `anon` en proyectos antiguos).
 3. Aplica las migraciones de `supabase/migrations/` (ver
    [`docs/SETUP-SUPABASE.md`](docs/SETUP-SUPABASE.md), incluido el camino sin CLI).
@@ -119,6 +122,7 @@ docs/           # arquitectura, modelo de datos, roadmap y decisiones
 - [`docs/API.md`](docs/API.md) — API externa para OpenCode/MCP (auth, endpoints, límites).
 - [`mcp/README.md`](mcp/README.md) — servidor MCP local: compilar, configurar y herramientas.
 - [`docs/IMPORT-EXPORT.md`](docs/IMPORT-EXPORT.md) — formato de respaldo JSON y reglas de importación.
+- [`docs/DEPLOY.md`](docs/DEPLOY.md) — despliegue en Vercel, variables y checklist de producción.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decisiones técnicas.
 - [`tarea_gcam.md`](tarea_gcam.md) — alcance funcional completo.
 
