@@ -426,7 +426,10 @@ Una etapa está terminada cuando:
   `lineage_id` para listar nuevos, retirados, renombrados, movidos y cambiados. Los
   niveles y parámetros que ya no existen se **retiran** (`is_active = false`) en vez
   de borrarse. La cámara nueva crea su versión «1.0» automáticamente. Migración 06
-  aplicada al proyecto alojado. Verificado con E2E real (20/20) y `npm test` (45).
+  aplicada al proyecto alojado. Verificado en local y en producción (20/20 en Chrome
+  headless, sin errores de consola), con round-trip de exportación/importación y RLS
+  del historial (dueño permitido, usuario ajeno `42501`, `anon` `42501`); `npm test`
+  en 46.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **6 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025), la marca `applied_to_profile`
