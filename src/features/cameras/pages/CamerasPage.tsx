@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Archive, ArchiveRestore, Camera as CameraIcon, Pencil, Plus, RefreshCw, Search, Trash2, X } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Archive, ArchiveRestore, Camera as CameraIcon, Download, Pencil, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../../components/common/Badge'
 import { Button } from '../../../components/common/Button'
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog'
@@ -16,9 +16,12 @@ import { PageHeader } from '../../../components/layout/PageHeader'
 import { useAsyncData } from '../../../hooks/useAsyncData'
 import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import { toAppError } from '../../../lib/errors/AppError'
+import { backupFilename, downloadJson } from '../../../lib/helpers/downloadJson'
 import { cameraService } from '../../../services/cameraService'
+import { catalogTransferService } from '../../../services/catalogTransferService'
 import type { ActiveFilter, Camera } from '../../../services/types'
 import { CameraFormDialog } from '../components/CameraFormDialog'
+import { ImportCatalogDialog } from '../components/ImportCatalogDialog'
 
 const STATUS_OPTIONS: Array<{ value: ActiveFilter; label: string }> = [
   { value: 'active', label: 'Activas' },
@@ -31,6 +34,7 @@ const PAGE_SIZE = 25
 /** Catálogo principal: CRUD completo con búsqueda, filtros y estados obligatorios. */
 export const CamerasPage = () => {
   const { notify } = useToast()
+  const navigate = useNavigate()
 
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput, 300)
@@ -48,6 +52,8 @@ export const CamerasPage = () => {
   const canLoadMore = cameras.length < total
 
   const [formOpen, setFormOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
+  const [exportingId, setExportingId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Camera | null>(null)
   const [deleting, setDeleting] = useState<Camera | null>(null)
   const [deletingBusy, setDeletingBusy] = useState(false)
@@ -69,6 +75,23 @@ export const CamerasPage = () => {
       tone: 'success',
     })
     reload()
+  }
+
+  const exportCamera = async (camera: Camera) => {
+    setExportingId(camera.id)
+    try {
+      const backup = await catalogTransferService.exportCamera(camera.id, { includeExperiments: true })
+      downloadJson(backupFilename(camera.slug), backup)
+      notify({
+        title: 'Respaldo exportado',
+        description: `${camera.name}. Incluye versiones, árbol, parámetros, perfiles, experimentos e historial.`,
+        tone: 'success',
+      })
+    } catch (cause) {
+      notify({ title: 'No se pudo exportar', description: toAppError(cause).message, tone: 'danger' })
+    } finally {
+      setExportingId(null)
+    }
   }
 
   const toggleActive = async (camera: Camera) => {
@@ -128,6 +151,13 @@ export const CamerasPage = () => {
               onClick={reload}
             >
               Actualizar
+            </Button>
+            <Button
+              size="sm"
+              leadingIcon={<Upload aria-hidden="true" className="size-4" />}
+              onClick={() => setImportOpen(true)}
+            >
+              Importar
             </Button>
             <Button
               variant="primary"
@@ -251,6 +281,13 @@ export const CamerasPage = () => {
                   </span>
                 </Link>
                 <div className="flex shrink-0 items-center gap-1">
+                  <IconButton
+                    label={`Exportar ${camera.name}`}
+                    disabled={exportingId === camera.id}
+                    onClick={() => void exportCamera(camera)}
+                  >
+                    <Download className="size-4" />
+                  </IconButton>
                   <IconButton label={`Editar ${camera.name}`} onClick={() => openEdit(camera)}>
                     <Pencil className="size-4" />
                   </IconButton>
@@ -292,6 +329,21 @@ export const CamerasPage = () => {
         camera={editing}
         onClose={() => setFormOpen(false)}
         onSaved={handleSaved}
+      />
+
+      <ImportCatalogDialog
+        key={`import-${importOpen ? 'open' : 'closed'}`}
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={(cameraId, counts) => {
+          notify({
+            title: 'Respaldo importado',
+            description: `${counts.versions} versiones, ${counts.nodes} nodos, ${counts.parameters} parámetros, ${counts.configurations} perfiles y ${counts.experiments} experimentos.`,
+            tone: 'success',
+          })
+          reload()
+          navigate(`/cameras/${cameraId}`)
+        }}
       />
 
       <ConfirmDialog

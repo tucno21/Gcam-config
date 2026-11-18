@@ -156,7 +156,8 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 
 - Toda operación de persistencia vive en `src/services/`, un archivo por dominio:
   `cameraService`, `versionService`, `nodeService`, `parameterService`,
-  `configurationService`, `experimentService`, `historyService` y `authService`.
+  `configurationService`, `experimentService`, `historyService` y `authService`,
+  más `catalogTransferService` (respaldos JSON, Etapa 13).
   Los tipos de fila y de dominio están en `services/types.ts`.
 - Cada servicio documenta su contrato: firma, entradas, salida y errores posibles.
   Devuelve dominio en `camelCase`; `*Row` (snake_case) no sale de `services/`.
@@ -363,6 +364,16 @@ Una etapa está terminada cuando:
   proponer cambios sin escribir, guardar recomendación y registrar resultado).
   Endpoints nuevos en la API para soportarlo (`GET /versions/:id/configurations`,
   `PATCH /experiments/:id`). Verificado con cliente MCP real: 17/17 comprobaciones.
+- **Etapa 13** — importación y exportación: completada. Formato propio JSON
+  `gcam-camera-backup` (schemaVersion 1) y `gcam-profile-backup`, documentados en
+  `docs/IMPORT-EXPORT.md`; exportación de cámara completa (con o sin experimentos e
+  historial) y de perfil individual; importación validada con resumen y errores antes
+  de confirmar, slug editable con detección de duplicados y **sin sobrescribir**
+  (siempre crea cámara nueva). Se remapean ids y se conservan jerarquía, valores,
+  predeterminados, archivado, fechas de experimentos/historial y ruta congelada.
+  Verificado con E2E: exportar, borrar la original, importar y comparar round-trip
+  (versiones, árbol, parámetros, perfil, valores, experimento e historial) y
+  duplicado bloqueado; base limpia.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`

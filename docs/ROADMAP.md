@@ -19,7 +19,7 @@ antes de la siguiente.
 | 10 | Experimentos e historial | ✅ | cambios con valor anterior/nuevo, ruta histórica y trazabilidad |
 | 11 | API segura | ✅ | acceso autenticado, paginado y acotado; sin secretos |
 | 12 | OpenCode / MCP | ✅ | respuestas basadas en datos reales; escritura limitada |
-| 13 | Import / export | ⏳ pendiente | round-trip JSON sin perder relaciones |
+| 13 | Import / export | ✅ | round-trip JSON sin perder relaciones |
 | 14 | Calidad y seguridad | ⏳ pendiente | pruebas funcionales, de seguridad y responsive ejecutadas |
 | 15 | Despliegue en Vercel | ⏳ pendiente | SPA rewrites, RLS verificado en producción, otro dispositivo OK |
 

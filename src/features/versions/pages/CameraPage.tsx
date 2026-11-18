@@ -3,6 +3,7 @@ import {
   Archive,
   ArchiveRestore,
   Copy,
+  Download,
   ExternalLink,
   Pencil,
   Plus,
@@ -23,8 +24,10 @@ import { PageHeader } from '../../../components/layout/PageHeader'
 import { useAsyncData } from '../../../hooks/useAsyncData'
 import { useWorkspaceSelection } from '../../../hooks/useWorkspaceSelection'
 import { AppError, toAppError } from '../../../lib/errors/AppError'
+import { backupFilename, downloadJson } from '../../../lib/helpers/downloadJson'
 import { formatDateTime } from '../../../lib/helpers/formatDate'
 import { cameraService } from '../../../services/cameraService'
+import { catalogTransferService } from '../../../services/catalogTransferService'
 import { versionService } from '../../../services/versionService'
 import type { Camera, CameraVersion } from '../../../services/types'
 import { CameraFormDialog } from '../../cameras/components/CameraFormDialog'
@@ -59,6 +62,7 @@ export const CameraPage = () => {
   const [formOpen, setFormOpen] = useState(false)
   const [cameraFormOpen, setCameraFormOpen] = useState(false)
   const [editingVersion, setEditingVersion] = useState<CameraVersion | null>(null)
+  const [exporting, setExporting] = useState(false)
   const [duplicatingSource, setDuplicatingSource] = useState<CameraVersion | null>(null)
   const [deletingVersion, setDeletingVersion] = useState<CameraVersion | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
@@ -100,8 +104,24 @@ export const CameraPage = () => {
 
   if (!camera) return null
 
-  const handleVersionSaved = (saved: CameraVersion) => {
-    notify({
+  const exportCameraBackup = async () => {
+    setExporting(true)
+    try {
+      const backup = await catalogTransferService.exportCamera(camera.id, { includeExperiments: true })
+      downloadJson(backupFilename(camera.slug), backup)
+      notify({
+        title: 'Respaldo exportado',
+        description: `${camera.name}: versiones, árbol, parámetros, perfiles, experimentos e historial.`,
+        tone: 'success',
+      })
+    } catch (cause) {
+      notify({ title: 'No se pudo exportar', description: toAppError(cause).message, tone: 'danger' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleVersionSaved = (saved: CameraVersion) => {    notify({
       title: editingVersion ? 'Versión actualizada' : 'Versión creada',
       description: `${saved.version} · ${camera.name}`,
       tone: 'success',
@@ -183,6 +203,14 @@ export const CameraPage = () => {
             >
               {camera.isActive ? <Archive className="size-4" /> : <ArchiveRestore className="size-4" />}
             </IconButton>
+            <Button
+              size="sm"
+              leadingIcon={<Download aria-hidden="true" className="size-4" />}
+              loading={exporting}
+              onClick={() => void exportCameraBackup()}
+            >
+              Exportar
+            </Button>
             <Button leadingIcon={<Pencil aria-hidden="true" className="size-4" />} onClick={() => setCameraFormOpen(true)}>
               Editar cámara
             </Button>

@@ -532,3 +532,28 @@ datos; `propose_parameter_changes` valida contra datos reales y no escribe;
 soportarlo: `GET /versions/:id/configurations` y `PATCH /experiments/:id` (solo
 observaciones/conclusión/estado).
 
+---
+
+## D-034 — Respaldo JSON propio, importación aditiva y nunca sobrescritura
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+Formato propio `gcam-camera-backup` (con `schemaVersion: 1`) y
+`gcam-profile-backup` para perfiles, documentados en `docs/IMPORT-EXPORT.md`. La
+exportación es completa (versiones, árbol, parámetros, perfiles, valores y,
+opcionalmente, experimentos con historial). La importación **siempre crea una
+cámara nueva**: no mezcla ni sobrescribe datos existentes; el slug es editable y se
+bloquea si ya existe. Los `id` del archivo solo relacionan dentro de él y se
+remapean al importar.
+
+**Motivo:** el criterio de la etapa pide exportar, borrar una copia de prueba e
+importar sin perder relaciones ni valores. La sobrescritura parcial sería mucho más
+arriesgada y no aporta al uso real (un usuario, un catálogo).
+
+**Consecuencia:** la validación ocurre **antes** de escribir y detecta formato,
+límites, duplicados internos y referencias rotas. Se conservan las fechas de creación
+de experimentos e historial (`createdAt`, `startedAt`, `completedAt`) y la ruta
+congelada; `updated_at` se recalcula. La importación de XML de LMC/AGC/BSG queda
+explícitamente fuera de alcance hasta inspeccionar archivos reales. La app no
+importa perfiles sueltos en versiones existentes.
+

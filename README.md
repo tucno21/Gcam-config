@@ -34,6 +34,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   validación; contrato en `docs/API.md` (D-032)
 - Etapa 12 — OpenCode / MCP: completa. Servidor MCP local por stdio con 13
   herramientas sobre la API; escritura limitada y sin aplicar cambios (D-033)
+- Etapa 13 — import/export: completa. Respaldo JSON propio, importación validada y
+  aditiva con round-trip sin perder relaciones (D-034)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
@@ -112,6 +114,7 @@ docs/           # arquitectura, modelo de datos, roadmap y decisiones
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — etapas y estado.
 - [`docs/API.md`](docs/API.md) — API externa para OpenCode/MCP (auth, endpoints, límites).
 - [`mcp/README.md`](mcp/README.md) — servidor MCP local: compilar, configurar y herramientas.
+- [`docs/IMPORT-EXPORT.md`](docs/IMPORT-EXPORT.md) — formato de respaldo JSON y reglas de importación.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decisiones técnicas.
 - [`tarea_gcam.md`](tarea_gcam.md) — alcance funcional completo.
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Archive, ArchiveRestore, Copy, Layers, Pencil, Plus, Star, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Copy, Download, Layers, Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { Badge } from '../../../components/common/Badge'
 import { Button } from '../../../components/common/Button'
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog'
@@ -14,7 +14,10 @@ import { useAsyncData } from '../../../hooks/useAsyncData'
 import { useWorkspaceSelection } from '../../../hooks/useWorkspaceSelection'
 import { useWorkspaceStore } from '../../../stores/useWorkspaceStore'
 import { AppError, toAppError } from '../../../lib/errors/AppError'
+import { backupFilename, downloadJson } from '../../../lib/helpers/downloadJson'
+import { slugify } from '../../../lib/helpers/slugify'
 import { configurationService } from '../../../services/configurationService'
+import { catalogTransferService } from '../../../services/catalogTransferService'
 import { nodeService } from '../../../services/nodeService'
 import { parameterService } from '../../../services/parameterService'
 import type { Configuration } from '../../../services/types'
@@ -100,6 +103,20 @@ export const ConfigurationsPage = () => {
       profilesQuery.reload()
     } catch (cause) {
       notify({ title: 'No se pudo marcar como predeterminado', description: toAppError(cause).message, tone: 'danger' })
+    }
+  }
+
+  const exportProfile = async (profile: Configuration) => {
+    try {
+      const backup = await catalogTransferService.exportConfiguration(profile.id)
+      downloadJson(backupFilename(backup.context.cameraSlug, `-${slugify(profile.name)}`), backup)
+      notify({
+        title: 'Perfil exportado',
+        description: `${profile.name} con ${profile.valueCount} ${profile.valueCount === 1 ? 'valor' : 'valores'} y las definiciones usadas.`,
+        tone: 'success',
+      })
+    } catch (cause) {
+      notify({ title: 'No se pudo exportar', description: toAppError(cause).message, tone: 'danger' })
     }
   }
 
@@ -237,6 +254,13 @@ export const ConfigurationsPage = () => {
                             <Star aria-hidden="true" className="size-3.5" />
                           </IconButton>
                         )}
+                        <IconButton
+                          size="sm"
+                          label={`Exportar ${profile.name}`}
+                          onClick={() => void exportProfile(profile)}
+                        >
+                          <Download aria-hidden="true" className="size-3.5" />
+                        </IconButton>
                         <IconButton size="sm" label={`Editar ${profile.name}`} onClick={() => openEdit(profile)}>
                           <Pencil aria-hidden="true" className="size-3.5" />
                         </IconButton>
