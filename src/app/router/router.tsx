@@ -1,22 +1,26 @@
 import { createBrowserRouter } from 'react-router-dom'
-import { CamerasPage } from '../../features/cameras/pages/CamerasPage'
-import { CameraPage } from '../../features/versions/pages/CameraPage'
-import { VersionOverviewPage } from '../../features/versions/pages/VersionOverviewPage'
-import { HierarchyPage } from '../../features/hierarchy/pages/HierarchyPage'
-import { ConfigurationsPage } from '../../features/configurations/pages/ConfigurationsPage'
-import { ExperimentsPage } from '../../features/experiments/pages/ExperimentsPage'
-import { HistoryPage } from '../../features/history/pages/HistoryPage'
-import { AssistantPage } from '../../features/assistant/pages/AssistantPage'
-import { ParameterPage } from '../../features/parameters/pages/ParameterPage'
-import { LoginPage } from '../../features/auth/pages/LoginPage'
+import {
+  LazyAssistantPage,
+  LazyCameraPage,
+  LazyCamerasPage,
+  LazyConfigurationsPage,
+  LazyExperimentsPage,
+  LazyHierarchyPage,
+  LazyHistoryPage,
+  LazyLoginPage,
+  LazyParameterPage,
+  LazyVersionOverviewPage,
+} from './lazyPages'
 import { HomePage } from '../../pages/HomePage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
 import { RouteErrorPage } from '../../pages/RouteErrorPage'
 import { AppShell } from '../AppShell'
 import { RequireSession } from './RequireSession'
 
+// Las páginas de datos se cargan bajo demanda (code-splitting): el arranque solo
+// descarga el shell y la sesión; cada vista llega al navegar (ver lazyPages).
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage />, errorElement: <RouteErrorPage /> },
+  { path: '/login', element: <LazyLoginPage />, errorElement: <RouteErrorPage /> },
   {
     // Toda vista de datos exige sesión; la seguridad real vive en RLS.
     path: '/',
@@ -30,15 +34,15 @@ export const router = createBrowserRouter([
             errorElement: <RouteErrorPage />,
             children: [
               { index: true, element: <HomePage /> },
-              { path: 'cameras', element: <CamerasPage /> },
-              { path: 'cameras/:cameraId', element: <CameraPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId', element: <VersionOverviewPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/hierarchy', element: <HierarchyPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/parameters/:parameterId', element: <ParameterPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/configurations', element: <ConfigurationsPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/experiments', element: <ExperimentsPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/history', element: <HistoryPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/assistant', element: <AssistantPage /> },
+              { path: 'cameras', element: <LazyCamerasPage /> },
+              { path: 'cameras/:cameraId', element: <LazyCameraPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId', element: <LazyVersionOverviewPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/hierarchy', element: <LazyHierarchyPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/parameters/:parameterId', element: <LazyParameterPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/configurations', element: <LazyConfigurationsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/experiments', element: <LazyExperimentsPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/history', element: <LazyHistoryPage /> },
+              { path: 'cameras/:cameraId/versions/:versionId/assistant', element: <LazyAssistantPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

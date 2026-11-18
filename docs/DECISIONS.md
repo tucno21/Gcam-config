@@ -557,3 +557,31 @@ congelada; `updated_at` se recalcula. La importación de XML de LMC/AGC/BSG qued
 explícitamente fuera de alcance hasta inspeccionar archivos reales. La app no
 importa perfiles sueltos en versiones existentes.
 
+---
+
+## D-035 — Rendimiento, pruebas automatizadas y riesgo aceptado de Vite en desarrollo
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+**Code-splitting**: las páginas de datos se cargan con `lazy()` + `Suspense`
+(`app/router/router.tsx`, `AppShell`) y Vite separa vendors (`react-vendor`,
+`supabase`, `dnd-kit`). El bundle de entrada bajó de ~730 kB a ~250 kB (78 kB gzip)
+y el aviso de chunk > 500 kB desapareció; las páginas llegan bajo demanda.
+
+**Pruebas**: se autorizó **Vitest** (devDependency) para lógica pura. Los tests
+conviven con el código (`*.test.ts`) y cubren validadores de cámara, versión,
+parámetro, enum/configuración, experimento, árbol, respaldos JSON, `AppError`,
+helpers y validación de la API. `npm test` debe pasar antes de cerrar una etapa.
+
+**Accesibilidad y responsive**: auditoría automatizada (headless) de nombres
+accesibles en controles, botones, enlaces e imágenes, además de desbordamiento
+horizontal en 390 px, 768 px y escritorio, sobre todas las vistas con datos reales y
+el diálogo de alta. Sin hallazgos.
+
+**Riesgo aceptado**: `npm audit` mantiene avisos *high* de **Vite 6.2.7** y el árbol
+de desarrollo (no del runtime del navegador). Afectan al servidor de desarrollo
+(fs.deny, WebSocket, middleware) y su corrección exige un salto de major (Vite 7),
+prohibido sin autorización. Mitigaciones: el build de producción es estático (Vite no
+corre en Vercel), el dev server limita hosts con `server.allowedHosts`, y el túnel de
+desarrollo debe cerrarse al terminar. Se revisará al planificar el salto de major.
+

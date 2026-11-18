@@ -36,6 +36,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   herramientas sobre la API; escritura limitada y sin aplicar cambios (D-033)
 - Etapa 13 — import/export: completa. Respaldo JSON propio, importación validada y
   aditiva con round-trip sin perder relaciones (D-034)
+- Etapa 14 — calidad y seguridad: completa. Rutas lazy con vendors separados,
+  45 pruebas con Vitest y auditoría de accesibilidad/responsive sin hallazgos (D-035)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
@@ -84,7 +86,9 @@ cp .env.example .env.local
 | `npm run dev` | servidor de desarrollo con HMR |
 | `npm run build` | chequeo de tipos (`tsc -b`) + build de producción |
 | `npm run lint` | oxlint |
+| `npm test` | Vitest (lógica pura: validadores, árbol, respaldos, errores) |
 | `npm run preview` | sirve el build local |
+| `npm run mcp:build` / `npm run mcp` | compila y lanza el servidor MCP local |
 
 No hay script de tests todavía.
 

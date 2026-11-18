@@ -176,6 +176,17 @@ api/
 - `api/` no forma parte del bundle de la SPA; se compila con `tsconfig.api.json`
   (incluido en `tsc -b`).
 
+## Rendimiento y pruebas (Etapa 14)
+
+- Las páginas de datos usan `lazy()` + `Suspense`; el `AppShell` muestra
+  `PageLoader` mientras llega el chunk. El acceso (`/login`) también es lazy.
+- `vite.config.ts` separa vendors (`react-vendor`, `supabase`, `dnd-kit`) para
+  cachear entre despliegues. Presupuesto inicial ~250 kB (78 kB gzip).
+- Tests con **Vitest** junto al código (`*.test.ts`): validadores, árbol, respaldos,
+  errores y helpers. `npm test` es obligatorio al cerrar cada etapa.
+- Auditoría automatizada (headless) de nombres accesibles y desbordamiento
+  horizontal en 390/768/escritorio.
+
 ## Estados de UI obligatorios
 
 Toda consulta expone: `idle | loading | success | empty | error`. El error incluye

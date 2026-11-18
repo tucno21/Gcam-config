@@ -20,20 +20,19 @@ antes de la siguiente.
 | 11 | API segura | ✅ | acceso autenticado, paginado y acotado; sin secretos |
 | 12 | OpenCode / MCP | ✅ | respuestas basadas en datos reales; escritura limitada |
 | 13 | Import / export | ✅ | round-trip JSON sin perder relaciones |
-| 14 | Calidad y seguridad | ⏳ pendiente | pruebas funcionales, de seguridad y responsive ejecutadas |
+| 14 | Calidad y seguridad | ✅ | pruebas funcionales, de seguridad y responsive ejecutadas |
 | 15 | Despliegue en Vercel | ⏳ pendiente | SPA rewrites, RLS verificado en producción, otro dispositivo OK |
 
 ## Pendientes de decisión del usuario
 
-- **Runner de tests** (Etapa 14): hoy no existe; cualquier suite automatizada requiere
-  autorización para agregar dependencias.
-- **Backend de la API** (Etapa 11): Vercel Functions (`api/`) vs. Supabase Edge
-  Functions.
-- **SDK de MCP** (Etapa 12): probablemente `@modelcontextprotocol/sdk`, no autorizado
-  todavía.
-- **Code-splitting**: el bundle pasó de 357 kB a 592 kB (174 kB gzip) al entrar
-  `supabase-js`. El warning de Vite no bloquea; se propone resolver con lazy-loading
-  de rutas en la Etapa 14, salvo decisión contraria.
+- **Runner de tests**: resuelto en la Etapa 14 con **Vitest** (autorizado). `npm test`
+  cubre lógica pura; no hay pruebas de componentes/DOM.
+- **Backend de la API** (Etapa 11): resuelto con **Vercel Functions** (`api/`).
+- **SDK de MCP** (Etapa 12): resuelto con `@modelcontextprotocol/sdk` + `zod`, servidor
+  MCP local por stdio.
+- **Vite 7**: los avisos *high* de `npm audit` son del servidor de desarrollo de Vite 6
+  y exigen salto de major. Riesgo aceptado y documentado (D-035); revisar en la
+  siguiente actualización planificada.
 
 ## Riesgos conocidos
 

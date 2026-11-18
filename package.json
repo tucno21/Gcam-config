@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "vitest run",
     "preview": "vite preview",
     "mcp:build": "esbuild mcp/server.ts --bundle --platform=node --format=esm --outfile=mcp/dist/server.mjs --external:@modelcontextprotocol/sdk --external:zod",
     "mcp": "node mcp/dist/server.mjs"
@@ -34,6 +35,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "oxlint": "^1.90.0",
     "typescript": "~7.0.2",
-    "vite": "^6.2.7"
+    "vite": "^6.2.7",
+    "vitest": "^4.1.12"
   }
 }

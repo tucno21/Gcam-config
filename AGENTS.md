@@ -41,6 +41,7 @@ Instalado y fijado en `package.json`:
 | @dnd-kit/core · sortable · utilities | 6.3.1 · 10.0.0 · 3.2.2 | árbol (Etapa 7) |
 | @modelcontextprotocol/sdk | 1.32.2 | servidor MCP local (Etapa 12) |
 | zod | 4.6.7 | esquemas de entrada del MCP (requisito del SDK) |
+| vitest | 4.1.12 | tests de lógica pura (Etapa 14, autorizado) |
 
 Pendientes de instalar: ninguna.
 
@@ -48,7 +49,7 @@ Pendientes de instalar: ninguna.
 
 `zustand`, `lucide-react`, `axios`, `@dnd-kit/core`, `@dnd-kit/sortable`,
 `@dnd-kit/utilities`, `@supabase/supabase-js`, `react-router-dom`,
-`@modelcontextprotocol/sdk` y `zod` (este último como requisito del SDK).
+`@modelcontextprotocol/sdk`, `zod` (requisito del SDK) y `vitest` (solo dev, tests).
 
 Reglas:
 
@@ -254,12 +255,13 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 |---|---|
 | `npm run build` | al cerrar **toda** etapa (incluye `tsc -b`) |
 | `npm run lint` | al cerrar toda etapa |
+| `npm test` | al cerrar toda etapa (Vitest, lógica pura) |
 | `npm run dev` + revisión manual | etapas con UI |
 | `psql … -f supabase/tests/rls.sql` | etapas que toquen esquema, RLS o políticas |
 
-No existe script de tests todavía; si una etapa requiere pruebas automatizadas, se
-pide autorización para agregar el runner. **No afirmar que una prueba pasó si no se
-ejecutó.**
+Los tests viven junto al código (`*.test.ts`) y cubren validadores, árbol, respaldos,
+errores y helpers; no hay pruebas de DOM/componentes. **No afirmar que una prueba
+pasó si no se ejecutó.**
 
 ## 15. Memoria de trabajo (Engram MCP)
 
@@ -374,6 +376,12 @@ Una etapa está terminada cuando:
   Verificado con E2E: exportar, borrar la original, importar y comparar round-trip
   (versiones, árbol, parámetros, perfil, valores, experimento e historial) y
   duplicado bloqueado; base limpia.
+- **Etapa 14** — calidad y seguridad: completada. Code-splitting por rutas (`lazy` +
+  `Suspense`) y vendors separados en Vite; presupuesto inicial ~250 kB (78 gzip) sin
+  aviso de chunk; **Vitest autorizado** con 45 pruebas de lógica pura (`npm test`);
+  auditoría de accesibilidad y responsive (390/768/escritorio) sin hallazgos; `npm
+  audit` deja avisos *high* solo del servidor de desarrollo (Vite 6), aceptados y
+  documentados con mitigaciones (D-035).
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`
