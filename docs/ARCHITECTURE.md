@@ -70,7 +70,8 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/components/layout/` | shell, sidebar, topbar móvil, breadcrumbs, cabecera, pestañas | ✅ |
 | `src/components/feedback/` | `Spinner`, `EmptyState`, `ErrorState`, `PendingStage`, toasts | ✅ |
 | `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ |
-| `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | Etapa 7 |
+| `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | integrado en `features/hierarchy` |
+| `src/features/hierarchy/` | constructor del árbol: `treeUtils`, `NodeRow`, detalle, formulario y drag & drop | ✅ Etapa 7 |
 | `src/features/cameras/` | catálogo real: página, `CameraFormDialog` y validación del dominio | ✅ Etapa 5 |
 | `src/features/versions/` | versiones reales: formulario, duplicación de estructura, ficha (resumen) | ✅ Etapa 6 |
 | `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |
@@ -139,12 +140,17 @@ las relaciones y se muestra como breadcrumbs dentro de la vista.
 ## Árbol jerárquico
 
 - Se carga una vez por versión (`id, parent_id, name, node_type, sort_order`) y se
-  construye en memoria un índice `Map<id, Node[]>` indexado por `parent_id`.
+  construye en memoria un índice `Map<id, Node[]>` indexado por `parent_id`
+  (`features/hierarchy/treeUtils.ts`).
 - Render recursivo por nivel; sin límite de profundidad ni componentes anidados
-  predefinidos.
-- Drag & drop con `@dnd-kit`: se calcula el nuevo `parent_id` y `sort_order` en
-  cliente, se validan invariantes (sin ciclos, misma versión) y se persiste.
+  predefinidos. Expansión contraída por nodo; la rama del nodo seleccionado se
+  muestra siempre expandida (recordar selección con `useWorkspaceStore`).
+- Drag & drop con `@dnd-kit`: tres zonas por fila (antes/dentro/después), detección
+  `pointerWithin` priorizando las franjas; el nuevo `parent_id` y `sort_order` se
+  calculan en cliente, se validan (sin ciclos, misma versión) y se persisten con
+  `nodeService.move`/`reorder` (D-028).
 - Las rutas se derivan del índice; no se guardan.
+- Búsqueda por nombre: muestra coincidencias y sus ancestros, con la rama expandida.
 
 ## Estados de UI obligatorios
 

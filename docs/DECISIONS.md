@@ -389,3 +389,27 @@ trabaja por inserción ordenada (padres primero) con remapeo de `parent_id`; los
 nuevos garantizan que las versiones jamás compartan filas. Las acciones destructivas
 o masivas futuras seguirán este patrón de confirmación con impacto detallado.
 
+---
+
+## D-028 — Drag & drop con tres zonas por fila y validación en cliente + base
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+El árbol usa `@dnd-kit` con un asa explícita por fila. Cada fila registra tres
+droppables: franja superior (reordenar antes), cuerpo (anidar dentro) y franja
+inferior (reordenar después). La detección de colisión es propia: `pointerWithin`
+limitado a esas zonas y ordenado por altura ascendente, de modo que las franjas de
+10 px ganan sobre el cuerpo. Si el puntero cae sobre la fila sin zona (droppable de
+`useSortable`), se interpreta como «anidar».
+
+**Motivo:** `rectIntersection` elegía la fila completa y perdía la intención del
+usuario; con `pointerWithin` puro, la primera zona registrada ganaba también en los
+bordes inferiores. Tres zonas + prioridad por altura da un comportamiento predecible
+sin depender del orden de registro.
+
+**Consecuencia:** mover y reordenar se traducen en `nodeService.move` y
+`nodeService.reorder`; los ciclos, el autoparentado y el cruce de versiones se
+validan en el servicio con mensajes claros y, de nuevo, en los triggers de la base.
+Un movimiento rechazado muestra «Movimiento no permitido» y recarga el árbol para
+restaurar el estado real.
+

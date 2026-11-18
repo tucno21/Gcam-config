@@ -22,6 +22,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   búsqueda, filtros, archivado y ficha de detalle; verificado con E2E en navegador
 - Etapa 6 — versiones: completa. CRUD de versiones por cámara, predeterminada
   única, archivado, borrado seguro y duplicación de estructura explícita (D-027)
+- Etapa 7 — jerarquía ilimitada: completa. Constructor del árbol con drag & drop,
+  búsqueda, rutas calculadas, ciclos bloqueados y detalle del nodo (D-028)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige

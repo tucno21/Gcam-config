@@ -302,6 +302,14 @@ Una etapa está terminada cuando:
   headless: crear, duplicado de etiqueta bloqueado, editar, duplicar estructura a
   versión existente y a nueva, predeterminar, archivar, borrado bloqueado con
   explicación y ficha; sin errores de consola y base limpia.
+- **Etapa 7** — jerarquía ilimitada: completada. Constructor del árbol con profundidad
+  sin límite (probado hasta 4 niveles), crear raíz/hijo desde fila y panel de detalle,
+  editar nombre/tipo/descripción, eliminar rama con advertencia de nodos y parámetros,
+  mover y reordenar con drag & drop (tres zonas, D-028), expandir/contraer, búsqueda
+  con ancestros, ruta calculada y panel de detalle; el nodo seleccionado se recuerda
+  al navegar por el módulo (Zustand). Verificado con E2E real: árbol, búsqueda, drag
+  dentro, ciclo bloqueado con mensaje, reordenamiento de raíces, eliminación con
+  advertencia, cero errores de consola y base limpia.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario
