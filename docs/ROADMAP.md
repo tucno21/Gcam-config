@@ -15,7 +15,7 @@ antes de la siguiente.
 | 6 | Versiones | ✅ | varias versiones por cámara, árbol y datos aislados |
 | 7 | Jerarquía ilimitada | ✅ | 6 niveles, mover ramas, sin ciclos, persiste al recargar |
 | 8 | Parámetros | ✅ | tipos correctos, predeterminado ≠ valor de perfil |
-| 9 | Configuraciones | ⏳ pendiente | perfiles independientes y comparación con predeterminados |
+| 9 | Configuraciones | ✅ | perfiles independientes y comparación con predeterminados |
 | 10 | Experimentos e historial | ⏳ pendiente | cambios con valor anterior/nuevo, ruta histórica y trazabilidad |
 | 11 | API segura | ⏳ pendiente | acceso autenticado, paginado y acotado; sin secretos |
 | 12 | OpenCode / MCP | ⏳ pendiente | respuestas basadas en datos reales; escritura limitada |

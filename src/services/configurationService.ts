@@ -28,18 +28,27 @@ import type {
 const CONFIGURATION_COLUMNS =
   'id, camera_version_id, name, description, is_default, is_active, created_at, updated_at' as const
 
+/** Columnas con conteo de valores personalizados. */
+const CONFIGURATION_LIST_COLUMNS = `${CONFIGURATION_COLUMNS}, configuration_values(count)` as const
+
+type ConfigurationListRow = ConfigurationRow & { configuration_values?: Array<{ count: number }> }
+
 const VALUE_COLUMNS = 'id, configuration_id, parameter_id, value, notes, updated_at' as const
 
-const toConfiguration = (row: ConfigurationRow): Configuration => ({
+const toConfiguration = (row: ConfigurationRow, valueCount = 0): Configuration => ({
   id: row.id,
   cameraVersionId: row.camera_version_id,
   name: row.name,
   description: row.description,
   isDefault: row.is_default,
   isActive: row.is_active,
+  valueCount,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 })
+
+const toConfigurationFromList = (row: ConfigurationListRow): Configuration =>
+  toConfiguration(row, row.configuration_values?.[0]?.count ?? 0)
 
 const toValue = (row: ConfigurationValueRow): ConfigurationValue => ({
   id: row.id,
@@ -81,7 +90,7 @@ export const configurationService = {
 
       let query = getSupabase()
         .from('configurations')
-        .select(CONFIGURATION_COLUMNS, { count: 'exact' })
+        .select(CONFIGURATION_LIST_COLUMNS, { count: 'exact' })
         .eq('camera_version_id', versionId)
       if (active === 'active') query = query.eq('is_active', true)
       if (active === 'archived') query = query.eq('is_active', false)
@@ -90,11 +99,11 @@ export const configurationService = {
         .order('is_default', { ascending: false })
         .order('name', { ascending: true })
         .range(from, to)
-        .returns<ConfigurationRow[]>()
+        .returns<ConfigurationListRow[]>()
 
       if (error) throw error
 
-      return { items: (data ?? []).map(toConfiguration), total: count ?? 0, limit, offset }
+      return { items: (data ?? []).map(toConfigurationFromList), total: count ?? 0, limit, offset }
     } catch (error) {
       throw toAppError(error)
     }
@@ -183,6 +192,42 @@ export const configurationService = {
 
       if (error) throw error
       return (data ?? []).map(toValue)
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
+
+  /**
+   * Duplica un perfil con **solo** sus valores personalizados.
+   * No copia experimentos ni historial: esos pertenecen al perfil original.
+   */
+  async duplicate(configurationId: string): Promise<Configuration> {
+    try {
+      const source = await this.getById(configurationId)
+      const values = await this.listValues(configurationId)
+
+      const copy = await this.create({
+        cameraVersionId: source.cameraVersionId,
+        name: `${source.name} (copia)`,
+        description: source.description,
+        isDefault: false,
+        isActive: true,
+      })
+
+      if (values.length > 0) {
+        for (let index = 0; index < values.length; index += 100) {
+          const batch = values.slice(index, index + 100).map((value) => ({
+            configuration_id: copy.id,
+            parameter_id: value.parameterId,
+            value: value.value,
+            notes: value.notes,
+          }))
+          const { error } = await getSupabase().from('configuration_values').insert(batch)
+          if (error) throw error
+        }
+      }
+
+      return { ...copy, valueCount: values.length }
     } catch (error) {
       throw toAppError(error)
     }

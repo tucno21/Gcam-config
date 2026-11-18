@@ -134,11 +134,16 @@ export const parseDefaultValue = (
   }
 }
 
+export const formatValueForInput = (dataType: DataType, value: unknown): string => {
+  if (value === null || value === undefined) return ''
+  if (dataType === 'json') return JSON.stringify(value, null, 2)
+  if (dataType === 'boolean') return value === true ? 'true' : 'false'
+  return String(value)
+}
+
 export const formatDefaultValueForInput = (parameter: Parameter | null): string => {
-  if (!parameter || parameter.defaultValue === null || parameter.defaultValue === undefined) return ''
-  if (parameter.dataType === 'json') return JSON.stringify(parameter.defaultValue, null, 2)
-  if (parameter.dataType === 'boolean') return parameter.defaultValue === true ? 'true' : 'false'
-  return String(parameter.defaultValue)
+  if (!parameter) return ''
+  return formatValueForInput(parameter.dataType, parameter.defaultValue)
 }
 
 export const parameterToFormValues = (parameter: Parameter | null): ParameterFormValues =>

@@ -73,6 +73,7 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | integrado en `features/hierarchy` |
 | `src/features/hierarchy/` | constructor del árbol: `treeUtils`, `NodeRow`, detalle, formulario y drag & drop | ✅ Etapa 7 |
 | `src/features/parameters/` | parámetros: formulario tipado, lista por nodo, ficha y formato de valores | ✅ Etapa 8 |
+| `src/features/configurations/` | perfiles: lista, formulario, comparación de valores y restauración | ✅ Etapa 9 |
 | `src/features/cameras/` | catálogo real: página, `CameraFormDialog` y validación del dominio | ✅ Etapa 5 |
 | `src/features/versions/` | versiones reales: formulario, duplicación de estructura, ficha (resumen) | ✅ Etapa 6 |
 | `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |
@@ -85,7 +86,7 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/lib/constants/` | `app`, `navigation`, `versionSections` (uniones, no enums) | ✅ |
 | `src/lib/validation/` | validadores compartidos | Etapa 5 |
 | `src/services/` | `types` + un archivo por agregado (`cameraService`, `versionService`, `nodeService`, `parameterService`, `configurationService`, `experimentService`, `historyService`, `authService`) | ✅ Etapa 4 |
-| `src/stores/` | Zustand: `useWorkspaceStore` (selección) y `useUiStore` (menú móvil) | ✅ Etapa 4 |
+| `src/stores/` | Zustand: `useWorkspaceStore` (cámara/versión/nodo/perfil) y `useUiStore` (menú móvil) | ✅ Etapa 9 |
 | `src/styles/` | `theme.css` (tokens `@theme`) y `base.css` | ✅ |
 | `src/pages/` | inicio, 404 y error de ruta | ✅ |
 

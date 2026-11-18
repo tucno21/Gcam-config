@@ -319,6 +319,14 @@ Una etapa está terminada cuando:
   validación decimal, clave duplicada, duplicado, desactivación, edición, ficha,
   borrado seguro y separación predeterminado/perfil (12 sigue siendo 12 con un 20 en
   el perfil).
+- **Etapa 9** — perfiles de configuración: completada. Lista de perfiles con
+  predeterminado y archivado, alta/edición con validación, duplicado que copia solo
+  valores, selección activa recordada, comparación lado a lado predeterminado vs
+  perfil, búsqueda y filtros (nodo, tipo, con/sin valor), edición tipada de valores,
+  restauración explícita del predeterminado borrando el valor y borrado seguro.
+  Verificado con E2E: valores enteros/booleanos/enum, filtros, restauración con
+  confirmación, duplicado, renombrado, predeterminado, archivado, eliminación y
+  predeterminados intactos en BD; cero errores de consola y base limpia.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario

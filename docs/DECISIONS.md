@@ -437,3 +437,26 @@ guardar «1» como texto rompería los filtros y la futura comparación de perfi
 tocan `configuration_values`. Verificado con E2E: tras guardar 20 en un perfil, el
 predeterminado sigue siendo 12.
 
+---
+
+## D-030 — Un perfil solo guarda valores personalizados; el predeterminado no se materializa
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+Al crear un perfil **no se copian parámetros ni valores**: el perfil arranca vacío y
+cada fila muestra «sin valor personalizado» junto al predeterminado documentado, que
+solo se usa como referencia de comparación. Definir un valor es una acción explícita
+y tipada (`ValueDialog` + `TypedValueEditor`); **restaurar** el predeterminado borra
+la fila de `configuration_values` (no escribe el valor por defecto). Duplicar un
+perfil copia únicamente sus valores personalizados, nunca experimentos ni historial.
+
+**Motivo:** la tarea prohíbe inventar valores y exige que el predeterminado no cambie
+al editar un perfil; materializar valores haría imposible distinguir «sin configurar»
+de «configurado igual al predeterminado».
+
+**Consecuencia:** las vistas comparan siempre dos columnas (predeterminado / perfil) y
+la búsqueda y filtros trabajan sobre parámetros reales de la versión. Borrar un perfil
+con experimentos falla por `23503` y la UI sugiere archivarlo. Los contadores de la
+lista usan el embed `configuration_values(count)`; la edición de valores se hace fila a
+fila, sin guardados masivos que puedan dejar valores a medias.
+

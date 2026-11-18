@@ -20,6 +20,7 @@ import {
   validateParameterForm,
 } from '../validation'
 import type { ParameterField, ParameterFieldErrors, ParameterFormValues } from '../validation'
+import { TypedValueEditor } from './TypedValueEditor'
 
 type ParameterFormDialogProps = {
   open: boolean
@@ -28,63 +29,6 @@ type ParameterFormDialogProps = {
   parameter: Parameter | null
   onClose: () => void
   onSaved: (parameter: Parameter, mode: 'create' | 'edit') => void
-}
-
-/** Editor del valor predeterminado según el tipo, sin conversiones implícitas. */
-const DefaultValueEditor = ({
-  values,
-  error,
-  onChange,
-}: {
-  values: ParameterFormValues
-  error?: string
-  onChange: (raw: string) => void
-}) => {
-  const allowed = parseAllowedValues(values.allowedValuesRaw)
-  const common = {
-    id: 'parameter-default',
-    'aria-describedby': error ? 'parameter-default-error' : 'parameter-default-hint',
-    'aria-invalid': Boolean(error) || undefined,
-  }
-
-  switch (values.dataType) {
-    case 'integer':
-      return <Input {...common} inputMode="numeric" placeholder="Ej. 100 (vacío = desconocido)" value={values.defaultValueRaw} onChange={(e) => onChange(e.target.value)} />
-    case 'decimal':
-      return <Input {...common} inputMode="decimal" placeholder="Ej. 1.5 (vacío = desconocido)" value={values.defaultValueRaw} onChange={(e) => onChange(e.target.value)} />
-    case 'boolean':
-      return (
-        <Select {...common} value={values.defaultValueRaw} onChange={(e) => onChange(e.target.value)}>
-          <option value="">Desconocido</option>
-          <option value="true">Sí</option>
-          <option value="false">No</option>
-        </Select>
-      )
-    case 'enum':
-      return (
-        <Select {...common} value={values.defaultValueRaw} onChange={(e) => onChange(e.target.value)} disabled={allowed.length === 0}>
-          <option value="">{allowed.length === 0 ? 'Define las opciones primero' : 'Desconocido'}</option>
-          {allowed.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </Select>
-      )
-    case 'json':
-      return (
-        <Textarea
-          {...common}
-          rows={3}
-          className="font-mono text-[12px]"
-          placeholder='Ej. {"key": "valor"}'
-          value={values.defaultValueRaw}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )
-    case 'string':
-      return <Input {...common} placeholder="Texto libre (vacío = desconocido)" value={values.defaultValueRaw} onChange={(e) => onChange(e.target.value)} />
-  }
 }
 
 /** Alta y edición de parámetros dentro de un nodo. */
@@ -252,8 +196,11 @@ export const ParameterFormDialog = ({ open, node, parameter, onClose, onSaved }:
               hint="Vacío = desconocido. No se inventa un valor."
               error={errors.defaultValue}
             >
-              <DefaultValueEditor
-                values={values}
+              <TypedValueEditor
+                id="parameter-default"
+                dataType={values.dataType}
+                value={values.defaultValueRaw}
+                allowedValues={parseAllowedValues(values.allowedValuesRaw)}
                 error={errors.defaultValue}
                 onChange={(raw) => setField('defaultValueRaw', raw)}
               />

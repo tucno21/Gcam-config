@@ -235,6 +235,8 @@ export type Configuration = {
   description: string | null
   isDefault: boolean
   isActive: boolean
+  /** Valores personalizados definidos en el perfil. */
+  valueCount: number
   createdAt: string
   updatedAt: string
 }

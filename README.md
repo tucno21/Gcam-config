@@ -26,6 +26,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   búsqueda, rutas calculadas, ciclos bloqueados y detalle del nodo (D-028)
 - Etapa 8 — parámetros: completa. CRUD tipado por nodo, predeterminado con
   procedencia y certeza, ficha con ruta y cámara/versión (D-029)
+- Etapa 9 — perfiles: completa. Varios perfiles por versión, valores comparados
+  con el predeterminado, filtros y restauración explícita (D-030)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige
