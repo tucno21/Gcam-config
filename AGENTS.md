@@ -382,13 +382,14 @@ Una etapa está terminada cuando:
   auditoría de accesibilidad y responsive (390/768/escritorio) sin hallazgos; `npm
   audit` deja avisos *high* solo del servidor de desarrollo (Vite 6), aceptados y
   documentados con mitigaciones (D-035).
-- **Etapa 15** — despliegue en Vercel: **en curso**. Proyecto creado en
-  `https://gcam-omega.vercel.app` (conectado a `tucno21/Gcam-config`); añadidos
-  `vercel.json` (rewrites `/api` + SPA, cabeceras de seguridad y caché de assets) y
-  `api/package.json` con `"type": "commonjs"` para evitar
-  `FUNCTION_INVOCATION_FAILED` con ESM. Guía y checklist en `docs/DEPLOY.md`.
-  Pendiente: variables de entorno en Vercel, Site URL de Supabase y verificación
-  (login, `/api/health`, 401 sin token, CRUD y móvil).
+- **Etapa 15** — despliegue en Vercel: completada. Proyecto en
+  `https://gcam-omega.vercel.app` conectado a `tucno21/Gcam-config`; SPA y API en el
+  mismo despliegue con `vercel.json` (rewrite con *negative lookahead* que excluye
+  `/api`, cabeceras de seguridad y caché de assets) e imports `.js` en `api/` para el
+  runtime ESM. Variables `VITE_*` tipo **Config** más Redeploy. Verificado en
+  producción con navegador real: login sin aviso, CRUD de cámara (alta, ficha y
+  borrado), `/api/health` 200, `/api/cameras` 401 sin token, `anon` → 42501, rutas
+  profundas sirviendo la SPA y móvil 390 px sin desbordes; base limpia (D-036).
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`

@@ -38,7 +38,9 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   aditiva con round-trip sin perder relaciones (D-034)
 - Etapa 14 — calidad y seguridad: completa. Rutas lazy con vendors separados,
   45 pruebas con Vitest y auditoría de accesibilidad/responsive sin hallazgos (D-035)
-- Etapa 15 — despliegue en Vercel: en curso (`https://gcam-omega.vercel.app`)
+- Etapa 15 — despliegue en Vercel: **completa**. Publicada en
+  `https://gcam-omega.vercel.app` (SPA + API en el mismo proyecto); login, CRUD real,
+  RLS, rutas profundas y móvil verificados en producción (D-036)
 
 Desplegada en Vercel (plan Hobby) con la API en `/api`; pasos y checklist en
 [`docs/DEPLOY.md`](docs/DEPLOY.md).

@@ -21,7 +21,7 @@ antes de la siguiente.
 | 12 | OpenCode / MCP | ✅ | respuestas basadas en datos reales; escritura limitada |
 | 13 | Import / export | ✅ | round-trip JSON sin perder relaciones |
 | 14 | Calidad y seguridad | ✅ | pruebas funcionales, de seguridad y responsive ejecutadas |
-| 15 | Despliegue en Vercel | 🔶 desplegada, sin verificar | SPA rewrites, RLS verificado en producción, otro dispositivo OK |
+| 15 | Despliegue en Vercel | ✅ | SPA rewrites, RLS verificado en producción, móvil OK |
 
 ## Pendientes de decisión del usuario
 

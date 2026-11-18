@@ -12,23 +12,36 @@ documento resume el procedimiento y las comprobaciones posteriores.
    - Output directory: `dist`
 3. **Environment Variables** (Production y Preview):
 
-   | Variable | Valor |
-   |---|---|
-   | `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` |
-   | `VITE_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` |
+   | Variable | Valor | Tipo |
+   |---|---|---|
+   | `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` | **Config** |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` | **Config** |
+
+   ⚠️ Deben ser **Config**, no **Secret**. Vercel no permite marcar como secretas
+   las variables con prefijo `VITE_` porque Vite las incrusta en el bundle del
+   navegador: son públicas por diseño y su protección real es RLS.
 
 4. **Deploy**. La API se detecta desde `api/` automáticamente.
+
+> Cambiar una variable **exige Redeploy**: con variables de entorno, Vercel no
+> reconstruye solo. *Deployments → ⋯ → Redeploy*.
 
 > La clave `service_role` **no** se configura nunca: ni la app ni la API la usan
 > (D-032). Todo se limita con el JWT del usuario y RLS.
 
 ## 2. `vercel.json`
 
-- `rewrites`: `/api/*` pasa tal cual a la función y **el resto** cae en
-  `index.html` (rutas de la SPA como `/camaras/...` o `/login` sin 404).
+- `rewrites`: una sola regla con *negative lookahead* —
+  `"/((?!api/).*)" → /index.html`. Todas las rutas de la SPA (incluido `/login`)
+  caen en `index.html`, mientras `/api/*` llega a la función. Un rewrite
+  explícito de `/api` o un `"/(.*)"` genérico tapa las funciones y devuelve la
+  SPA en su lugar.
 - `headers`: `nosniff`, `Referrer-Policy`, `X-Frame-Options: DENY`,
   `Permissions-Policy` sin cámara/micrófono/geolocalización.
 - `Cache-Control` inmutable para `/assets/*` (nombres con hash).
+
+La API usa **imports internos con extensión `.js`** (`api/_lib/db.js`): Vercel
+ejecuta las funciones como ESM y no resuelve imports relativos sin extensión.
 
 ## 3. Supabase Auth con el dominio de producción
 
@@ -54,22 +67,29 @@ curl -i https://gcam-omega.vercel.app/api/cameras
 curl -I https://gcam-omega.vercel.app/login
 ```
 
-- [ ] `/login` carga sin el aviso «Falta configurar Supabase».
-- [ ] `/api/health` responde `{ "data": { "status": "ok" } }`.
-- [ ] `/api/cameras` sin token responde `401 unauthorized`.
-- [ ] Login real con tu usuario y CRUD de una cámara en producción.
-- [ ] Recarga directa de una ruta profunda (p. ej. `/cameras/.../hierarchy`)
-      sirve la SPA, no un 404.
-- [ ] Revisión en móvil (misma red) de login, catálogo y estructura.
-- [ ] RLS: con otra cuenta (si existe) no se ven datos ajenos.
+- [x] `/login` carga sin el aviso «Falta configurar Supabase».
+- [x] `/api/health` responde `{ "data": { "status": "ok" } }`.
+- [x] `/api/cameras` sin token responde `401 unauthorized`.
+- [x] Login real con tu usuario y CRUD de una cámara en producción (alta, ficha y
+      borrado; base limpia al terminar).
+- [x] Recarga directa de una ruta profunda (p. ej. `/cameras/...`) sirve la SPA,
+      no un 404.
+- [x] Revisión en móvil (390 px) de login y catálogo, sin desbordes.
+- [x] RLS: con la clave pública sola (rol `anon`) la lectura da `42501`; la API
+      sin cabecera `Authorization` da `401`.
+
+Verificado el 2026-11-18 sobre `https://gcam-omega.vercel.app` con navegador real
+(Chrome headless) y sesión del usuario; sin errores de consola.
 
 ## 5. Problemas típicos
 
 | Síntoma | Causa | Solución |
 |---|---|---|
 | «Falta configurar Supabase» | Variables ausentes en Vercel | Añadirlas y **redeploy** |
+| Borde rojo al guardar una `VITE_*` | Marcada como **Secret** | Cambiarla a **Config** |
 | `404` en `/login` o rutas internas | Falta el rewrite de la SPA | Revisar `vercel.json` y redesplegar |
-| `FUNCTION_INVOCATION_FAILED` en `/api/*` | Funciones ESM con imports sin extensión | `api/package.json` con `"type": "commonjs"` (ya incluido) |
+| `/api/*` devuelve `index.html` | El rewrite SPA captura `/api` | Usar el *negative lookahead* `/((?!api/).*)` |
+| `FUNCTION_INVOCATION_FAILED` en `/api/*` | Imports sin extensión en runtime ESM | Imports internos de `api/` con `.js` (ya aplicado) |
 | `PGRST205` | Esquema no aplicado en el proyecto | `docs/SETUP-SUPABASE.md` |
 | Sin filas con sesión | RLS/`owner_id` | Comprobar que la cámara es de tu usuario |
 | Correo apunta a `localhost:3000` | Site URL por defecto | Configurar la URL de producción |

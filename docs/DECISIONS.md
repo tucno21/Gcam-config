@@ -585,3 +585,35 @@ prohibido sin autorización. Mitigaciones: el build de producción es estático 
 corre en Vercel), el dev server limita hosts con `server.allowedHosts`, y el túnel de
 desarrollo debe cerrarse al terminar. Se revisará al planificar el salto de major.
 
+---
+
+## D-036 — Despliegue en Vercel: SPA y API en el mismo proyecto
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+**Qué**: la SPA se publica en `https://gcam-omega.vercel.app` (Vercel Hobby,
+conectado a `tucno21/Gcam-config`) y la API vive en el mismo proyecto como Vercel
+Functions (`api/[...path].ts`), sin backend extra y sin coste añadido.
+
+**Variables**: `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`, tipo
+**Config** (nunca *Secret*: Vercel rechaza marcar como secretas variables `VITE_`
+porque se incrustan en el bundle). Cambiarlas exige **Redeploy**.
+
+**Enrutado**: una única regla de rewrite con *negative lookahead*
+(`"/((?!api/).*)" → /index.html`). Ni un rewrite explícito de `/api` ni
+`"/(.*)"` genérico: ambos capturaban `/api/*` y devolvían la SPA en lugar de la
+función. `routes` con `handle: filesystem` tampoco incluía las funciones.
+
+**Runtime**: las funciones corren como **ESM** (paquete raíz `"type": "module"`),
+por lo que los imports internos de `api/` llevan extensión `.js`
+(`./_lib/http.js`). Sin ella: `FUNCTION_INVOCATION_FAILED`.
+
+**Seguridad**: `service_role` sigue sin usarse. Verificado en producción: `/api/*`
+sin token → `401`; clave pública con rol `anon` → `42501`; CRUD real con JWT del
+usuario funciona bajo RLS.
+
+**Pendiente operativo (manual, fuera del repo)**: en Supabase
+*Authentication → URL Configuration* fijar **Site URL**
+`https://gcam-omega.vercel.app` y añadir `https://gcam-omega.vercel.app/**` a
+*Redirect URLs* para que los correos vuelvan a la app publicada.
+
