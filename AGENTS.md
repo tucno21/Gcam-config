@@ -287,6 +287,13 @@ Una etapa está terminada cuando:
   `useAsyncData`, stores de interfaz, `/login` con Supabase Auth y guarda
   `RequireSession`; `Mis cámaras` lista datos reales. `npm run build` y
   `npm run lint` en verde.
+- **Etapa 5** — catálogo de cámaras: completada. CRUD completo con persistencia
+  real: alta y edición con formulario propio y validación pura, slug autogenerado,
+  búsqueda con debounce, filtro por estado, conteo de versiones por cámara,
+  archivar/reactivar, borrado solo cuando no hay versiones (D-026) y ficha de
+  detalle. Verificado con E2E real en Chrome headless (crear, validar vacío,
+  editar, archivar, reactivar, detalle, eliminar y búsqueda sin resultados) sin
+  errores de consola; la base quedó sin datos de prueba.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
   aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario

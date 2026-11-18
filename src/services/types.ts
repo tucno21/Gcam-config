@@ -51,6 +51,8 @@ export type Camera = {
   developer: string | null
   websiteUrl: string | null
   isActive: boolean
+  /** Versiones registradas, activas y archivadas (0 si no se consultaron). */
+  versionCount: number
   createdAt: string
   updatedAt: string
 }

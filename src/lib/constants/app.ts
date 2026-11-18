@@ -6,4 +6,4 @@ export const TOTAL_STAGES = 15
  * Etapa del roadmap en curso. Solo se usa para orientar durante la construcción;
  * se elimina de la interfaz al cerrar la Etapa 15.
  */
-export const CURRENT_STAGE = 4
+export const CURRENT_STAGE = 5

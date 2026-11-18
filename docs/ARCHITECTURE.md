@@ -66,19 +66,20 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/app/` | `AppShell`, providers y router | ✅ |
 | `src/app/router/` | rutas y guarda de sesión (`RequireSession`) | ✅ |
 | `src/features/auth/` | `AuthProvider`, `useAuth`, `/login` y validación de acceso | ✅ Etapa 4 |
-| `src/components/common/` | `Button`, `ButtonLink`, `IconButton`, `Badge`, `Panel`, `Dialog` | ✅ |
+| `src/components/common/` | `Button`, `ButtonLink`, `IconButton`, `Badge`, `Panel`, `Dialog`, `ConfirmDialog` | ✅ |
 | `src/components/layout/` | shell, sidebar, topbar móvil, breadcrumbs, cabecera, pestañas | ✅ |
 | `src/components/feedback/` | `Spinner`, `EmptyState`, `ErrorState`, `PendingStage`, toasts | ✅ |
-| `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ (usado por el acceso) |
+| `src/components/forms/` | `FormField`, `Input`, `Textarea`, `Select`, estilos de control | ✅ |
 | `src/components/tree/` | primitivas del árbol (fila, guía, indentación) | Etapa 7 |
+| `src/features/cameras/` | catálogo real: página, `CameraFormDialog` y validación del dominio | ✅ Etapa 5 |
 | `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |
-| `src/hooks/` | `usePageTitle`, `useAsyncData`, `useWorkspaceSelection` | ✅ |
+| `src/hooks/` | `usePageTitle`, `useAsyncData`, `useWorkspaceSelection`, `useDebouncedValue` | ✅ |
+| `src/lib/helpers/` | funciones puras (`cn`, `shortId`, `slugify`, `formatDate`) | ✅ |
 | `src/lib/supabase/` | cliente único de Supabase | ✅ Etapa 4 |
 | `src/lib/axios/` | instancia HTTP e interceptores | ✅ base (la usa la Etapa 11) |
 | `src/lib/errors/` | `AppError` y `toAppError` | ✅ Etapa 4 |
 | `src/lib/config/` | lectura de variables `VITE_*` | ✅ Etapa 4 |
 | `src/lib/constants/` | `app`, `navigation`, `versionSections` (uniones, no enums) | ✅ |
-| `src/lib/helpers/` | funciones puras (`cn`, `shortId`) | ✅ |
 | `src/lib/validation/` | validadores compartidos | Etapa 5 |
 | `src/services/` | `types` + un archivo por agregado (`cameraService`, `versionService`, `nodeService`, `parameterService`, `configurationService`, `experimentService`, `historyService`, `authService`) | ✅ Etapa 4 |
 | `src/stores/` | Zustand: `useWorkspaceStore` (selección) y `useUiStore` (menú móvil) | ✅ Etapa 4 |

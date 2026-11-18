@@ -347,3 +347,24 @@ la tabla es append-only, `revoke all` a `authenticated` seguido del `grant`
 explícito. La verificación de privilegios (`information_schema.role_table_grants`)
 pasa a formar parte de la comprobación post-migración en el proyecto remoto.
 
+---
+
+## D-026 — Eliminar una cámara solo si está vacía; archivar es el camino normal
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+El catálogo ofrece **Eliminar** únicamente cuando la cámara tiene `versionCount = 0`
+(verificado en la interfaz antes de enviar). Si tiene versiones, el botón aparece
+deshabilitado con su explicación y el camino es **Archivar** (`is_active = false`),
+reversible. La base, además, lo garantiza: el `on delete restrict` de
+`camera_versions → cameras` responde `23503`, que `AppError` traduce a «El registro
+tiene datos dependientes…».
+
+**Motivo:** la tarea exige no eliminar con dependencias históricas; el borrado físico
+es un caso raro (cámara creada por error) y el archivado conserva todo el trabajo.
+
+**Consecuencia:** las vistas jamás intentan un borrado que la base rechazará por
+diseño; si aun así ocurre (`23503`), el mensaje sugiere archivar. El mismo criterio
+se aplicará a versiones (Etapa 6) y perfiles (Etapa 9). El slug se genera a partir
+del nombre (`lib/helpers/slugify`) mientras el usuario no lo edite a mano.
+

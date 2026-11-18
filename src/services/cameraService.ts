@@ -18,7 +18,12 @@ import type { ActiveFilter, Camera, CameraInput, CameraListParams, CameraRow, Pa
 const CAMERA_COLUMNS =
   'id, name, slug, description, developer, website_url, is_active, created_at, updated_at' as const
 
-const toCamera = (row: CameraRow): Camera => ({
+/** Columnas del listado: añade el conteo de versiones vía embed de PostgREST. */
+const CAMERA_LIST_COLUMNS = `${CAMERA_COLUMNS}, camera_versions(count)` as const
+
+type CameraListRow = CameraRow & { camera_versions?: Array<{ count: number }> }
+
+const toCamera = (row: CameraRow, versionCount = 0): Camera => ({
   id: row.id,
   name: row.name,
   slug: row.slug,
@@ -26,9 +31,13 @@ const toCamera = (row: CameraRow): Camera => ({
   developer: row.developer,
   websiteUrl: row.website_url,
   isActive: row.is_active,
+  versionCount,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 })
+
+const toCameraFromList = (row: CameraListRow): Camera =>
+  toCamera(row, row.camera_versions?.[0]?.count ?? 0)
 
 const updateCamera = async (id: string, input: Partial<CameraInput>): Promise<Camera> => {
   const patch: Partial<CameraRow> = {}
@@ -59,7 +68,7 @@ export const cameraService = {
       const term = sanitizeSearch(params?.search)
       const active: ActiveFilter = params?.active ?? 'active'
 
-      let query = getSupabase().from('cameras').select(CAMERA_COLUMNS, { count: 'exact' })
+      let query = getSupabase().from('cameras').select(CAMERA_LIST_COLUMNS, { count: 'exact' })
       if (active === 'active') query = query.eq('is_active', true)
       if (active === 'archived') query = query.eq('is_active', false)
       if (term) query = query.or(`name.ilike.%${term}%,slug.ilike.%${term}%`)
@@ -67,28 +76,28 @@ export const cameraService = {
       const { data, error, count } = await query
         .order('name', { ascending: true })
         .range(from, to)
-        .returns<CameraRow[]>()
+        .returns<CameraListRow[]>()
 
       if (error) throw error
 
-      return { items: (data ?? []).map(toCamera), total: count ?? 0, limit, offset }
+      return { items: (data ?? []).map(toCameraFromList), total: count ?? 0, limit, offset }
     } catch (error) {
       throw toAppError(error)
     }
   },
 
-  /** Obtiene una cámara por id. Lanza `not_found` si no existe o RLS la oculta. */
+  /** Obtiene una cámara por id (con conteo de versiones). Lanza `not_found` si RLS la oculta. */
   async getById(id: string): Promise<Camera> {
     try {
       const { data, error } = await getSupabase()
         .from('cameras')
-        .select(CAMERA_COLUMNS)
+        .select(CAMERA_LIST_COLUMNS)
         .eq('id', id)
         .single()
-        .returns<CameraRow>()
+        .returns<CameraListRow>()
 
       if (error) throw error
-      return toCamera(data)
+      return toCameraFromList(data)
     } catch (error) {
       throw toAppError(error)
     }

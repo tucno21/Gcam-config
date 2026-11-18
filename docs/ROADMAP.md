@@ -11,7 +11,7 @@ antes de la siguiente.
 | 2 | Arquitectura frontend | ✅ | rutas y sistema visual funcionan en desktop y móvil, 0 errores de consola, 0 deps no autorizadas |
 | 3 | Modelo de datos y RLS | ✅ | migraciones reproducibles + RLS probado anónimo/autenticado |
 | 4 | Capa de datos | ✅ | un CRUD funciona extremo a extremo con errores legibles |
-| 5 | Catálogo de cámaras | ⏳ pendiente | CRUD completo con persistencia real |
+| 5 | Catálogo de cámaras | ✅ | CRUD completo con persistencia real |
 | 6 | Versiones | ⏳ pendiente | varias versiones por cámara, árbol y datos aislados |
 | 7 | Jerarquía ilimitada | ⏳ pendiente | 6 niveles, mover ramas, sin ciclos, persiste al recargar |
 | 8 | Parámetros | ⏳ pendiente | tipos correctos, predeterminado ≠ valor de perfil |
