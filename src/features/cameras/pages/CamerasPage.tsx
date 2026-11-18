@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Archive, ArchiveRestore, Camera as CameraIcon, Download, Pencil, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Archive, ArchiveRestore, Camera as CameraIcon, Copy, Download, Pencil, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Badge } from '../../../components/common/Badge'
 import { Button } from '../../../components/common/Button'
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog'
@@ -21,6 +21,7 @@ import { cameraService } from '../../../services/cameraService'
 import { catalogTransferService } from '../../../services/catalogTransferService'
 import type { ActiveFilter, Camera } from '../../../services/types'
 import { CameraFormDialog } from '../components/CameraFormDialog'
+import { DuplicateCameraDialog } from '../components/DuplicateCameraDialog'
 import { ImportCatalogDialog } from '../components/ImportCatalogDialog'
 
 const STATUS_OPTIONS: Array<{ value: ActiveFilter; label: string }> = [
@@ -34,7 +35,6 @@ const PAGE_SIZE = 25
 /** Catálogo principal: CRUD completo con búsqueda, filtros y estados obligatorios. */
 export const CamerasPage = () => {
   const { notify } = useToast()
-  const navigate = useNavigate()
 
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput, 300)
@@ -56,6 +56,7 @@ export const CamerasPage = () => {
   const [exportingId, setExportingId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Camera | null>(null)
   const [deleting, setDeleting] = useState<Camera | null>(null)
+  const [duplicating, setDuplicating] = useState<Camera | null>(null)
   const [deletingBusy, setDeletingBusy] = useState(false)
 
   const openCreate = () => {
@@ -75,6 +76,7 @@ export const CamerasPage = () => {
       tone: 'success',
     })
     reload()
+    if (!editing) window.location.assign(`/cameras/${saved.id}`)
   }
 
   const exportCamera = async (camera: Camera) => {
@@ -84,7 +86,7 @@ export const CamerasPage = () => {
       downloadJson(backupFilename(camera.slug), backup)
       notify({
         title: 'Respaldo exportado',
-        description: `${camera.name}. Incluye versiones, niveles, parámetros y valores actuales.`,
+        description: `${camera.name}. Incluye niveles, parámetros, valores actuales e historial.`,
         tone: 'success',
       })
     } catch (cause) {
@@ -141,7 +143,7 @@ export const CamerasPage = () => {
     <>
       <PageHeader
         title="Mis cámaras"
-        description="LMC, AGC, BSG o cualquier otra modificación de GCam. Son registros de datos: la aplicación no fija nombres ni versiones."
+        description="LMC, AGC, BSG o cualquier otra modificación de GCam. Son registros de datos: la aplicación no impone nombres ni estructura."
         breadcrumbs={[{ label: 'Inicio', to: '/' }, { label: 'Mis cámaras' }]}
         actions={
           <>
@@ -224,7 +226,7 @@ export const CamerasPage = () => {
           description={
             hasFilters
               ? 'Prueba con otro nombre, otro slug o cambia el filtro de estado.'
-              : 'Cada cámara agrupa sus propias versiones, y cada versión mantiene un árbol de parámetros independiente.'
+              : 'Cada cámara tiene sus propios niveles y parámetros, sin mezclarse con las demás.'
           }
           action={
             hasFilters ? (
@@ -274,13 +276,18 @@ export const CamerasPage = () => {
                     </span>
                   )}
                   <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-disabled">
-                    <span>
-                      {camera.versionCount} {camera.versionCount === 1 ? 'versión' : 'versiones'}
-                    </span>
                     {camera.developer && <span>Desarrollador: {camera.developer}</span>}
+                    <span>Abre sus ajustes para editar niveles</span>
                   </span>
                 </Link>
                 <div className="flex shrink-0 items-center gap-1">
+                  <IconButton
+                    label={`Duplicar ${camera.name}`}
+                    title="Duplicar cámara con sus niveles y valores"
+                    onClick={() => setDuplicating(camera)}
+                  >
+                    <Copy className="size-4" />
+                  </IconButton>
                   <IconButton
                     label={`Exportar ${camera.name}`}
                     disabled={exportingId === camera.id}
@@ -297,15 +304,7 @@ export const CamerasPage = () => {
                   >
                     {camera.isActive ? <Archive className="size-4" /> : <ArchiveRestore className="size-4" />}
                   </IconButton>
-                  <IconButton
-                    label={
-                      camera.versionCount > 0
-                        ? `${camera.name} tiene versiones: solo se puede archivar`
-                        : `Eliminar ${camera.name}`
-                    }
-                    disabled={camera.versionCount > 0}
-                    onClick={() => setDeleting(camera)}
-                  >
+                  <IconButton label={`Eliminar ${camera.name}`} onClick={() => setDeleting(camera)}>
                     <Trash2 className="size-4" />
                   </IconButton>
                 </div>
@@ -338,13 +337,33 @@ export const CamerasPage = () => {
         onImported={(cameraId, counts) => {
           notify({
             title: 'Respaldo importado',
-            description: `${counts.versions} versiones, ${counts.nodes} niveles y ${counts.parameters} parámetros.`,
+            description: `${counts.nodes} niveles y ${counts.parameters} parámetros importados.`,
             tone: 'success',
           })
           reload()
-          navigate(`/cameras/${cameraId}`)
+          window.location.assign(`/cameras/${cameraId}`)
         }}
       />
+
+      {duplicating && (
+        <DuplicateCameraDialog
+          key={`duplicate-camera-${duplicating.id}`}
+          open
+          camera={duplicating}
+          onClose={() => setDuplicating(null)}
+          onDuplicated={(created) => {
+            notify({
+              title: 'Cámara duplicada',
+              description: `${created.name}: niveles, parámetros y valores copiados.`,
+              tone: 'success',
+            })
+            setDuplicating(null)
+            reload()
+            // Recarga completa: evita arrastrar peticiones en vuelo del diálogo.
+            window.location.assign(`/cameras/${created.id}`)
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={deleting !== null}
@@ -355,10 +374,10 @@ export const CamerasPage = () => {
         tone="danger"
         loading={deletingBusy}
       >
-        Se eliminará permanentemente <strong className="text-ink">{deleting?.name}</strong>. Solo es posible cuando
-        no tiene versiones ni datos históricos; si tiene alguno, la base lo impedirá y la alternativa segura es
-        archivarla.
+        Se eliminará permanentemente <strong className="text-ink">{deleting?.name}</strong> con todos sus niveles,
+        parámetros, valores e historial. Esta acción no se puede deshacer.
       </ConfirmDialog>
     </>
   )
 }
+

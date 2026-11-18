@@ -158,7 +158,7 @@ export const ParameterDialog = ({ open, node, parameter, onClose, onSaved }: Par
         <FormField
           id="param-notes"
           label="Nota del parámetro"
-          hint="Qué controla y qué has observado. Se conserva entre versiones."
+          hint="Qué controla y qué has observado. Se guarda con el parámetro."
           error={errors.notes}
         >
           <Textarea
@@ -255,3 +255,4 @@ export const ParameterDialog = ({ open, node, parameter, onClose, onSaved }: Par
     </Dialog>
   )
 }
+

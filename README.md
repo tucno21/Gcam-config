@@ -1,8 +1,10 @@
 # Laboratorio de Configuraciones GCam
 
-Aplicación web privada para documentar cámaras GCam (LMC, AGC, BSG y otras), sus
-versiones y el **espejo de sus ajustes**: los niveles del menú, los parámetros con
-el valor que tiene el teléfono, notas y el historial de qué se cambió y si mejoró.
+Aplicación web privada para documentar cámaras GCam (LMC, AGC, BSG y otras) y el
+**espejo de sus ajustes**: los niveles del menú, los parámetros con el valor que
+tiene el teléfono, notas y el historial de qué se cambió y si mejoró. Cada cámara
+abre directamente sus niveles; para partir de una versión anterior se duplica la
+cámara.
 
 Es un **catálogo y laboratorio de documentación**. No modifica la app GCam del
 teléfono y **no almacena fotos ni videos**.
@@ -135,3 +137,4 @@ docs/           # arquitectura, modelo de datos, roadmap y decisiones
 
 React 19 + TypeScript + Vite 6 + Tailwind CSS 4, con Supabase (base de datos y auth)
 y despliegue en Vercel. Detalle y dependencias autorizadas en `AGENTS.md`.
+

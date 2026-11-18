@@ -670,3 +670,36 @@ respaldos anteriores (campos opcionales).
 (perfil activo, experimento). El trabajo diario es abrir un nivel, cambiar un valor
 y escribir qué pasó.
 
+---
+
+## D-038 — Sin «versiones» en la interfaz; duplicar cámara y borrado completo
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+**Qué.** La app deja de mostrar versiones. Cada cámara tiene **una** estructura de
+ajustes y abre directamente sus niveles (`/cameras/:id`). Para partir de una
+versión anterior de GCam se **duplica la cámara** («AGC 9.4 copia»), que copia
+niveles, parámetros, notas y valores actuales; el historial no se copia.
+
+**Por qué.** El usuario no quiere versiones: crea la cámara y empieza a cargar
+niveles. La tabla `camera_versions` sigue existiendo como ancla técnica de los
+nodos (`camera_version_id`), pero se crea sola y no se muestra en ninguna vista.
+
+**Implicaciones.**
+
+- Rutas: `/cameras/:cameraId` (ajustes), `/cameras/:cameraId/settings/:nodeId`,
+  `/cameras/:cameraId/history`, `/cameras/:cameraId/parameters/:parameterId`.
+- `versionService.getStructure(cameraId)` resuelve o crea la estructura interna.
+- La pestaña «Comparar» se retira: comparar versiones dejó de tener sentido.
+- Tras crear o duplicar una cámara se hace **recarga completa** (`location.assign`)
+  para no arrastrar peticiones en vuelo del diálogo (provocaba vistas colgadas).
+- Duplicar una cámara con cientos de parámetros se hace **por niveles y lotes**
+  (un INSERT por grupo de hermanos y lotes de 100 parámetros), no una petición por
+  fila.
+
+**Borrado.** El historial es append-only y `authenticated` no puede borrarlo. Para
+poder eliminar una cámara con datos se añadió la función
+`public.delete_camera(uuid)` (`security definer`), que valida la propiedad
+(`owner_id = auth.uid()`) y borra en orden hijos-primero. Un usuario ajeno recibe
+`42501`; `anon` no puede ejecutarla. Es el único camino que elimina historial.
+

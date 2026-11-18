@@ -15,7 +15,8 @@ import { formatDateTime } from '../../../lib/helpers/formatDate'
 import { historyService } from '../../../services/historyService'
 import { nodeService } from '../../../services/nodeService'
 import { parameterService } from '../../../services/parameterService'
-import { VersionSection } from '../../versions/components/VersionSection'
+import { versionService } from '../../../services/versionService'
+import { CameraSection } from '../../cameras/components/CameraSection'
 import { ParameterDialog } from '../components/ParameterDialog'
 import { ValueDialog } from '../components/ValueDialog'
 import { ancestorsOf, buildTreeIndex } from '../tree'
@@ -29,9 +30,16 @@ import {
 
 /** Ficha del parámetro: valor actual, referencia, nota e historial completo. */
 export const ParameterDetailPage = () => {
-  const { cameraId, versionId, parameterId } = useParams()
+  const { cameraId, parameterId } = useParams()
   const navigate = useNavigate()
   const { notify } = useToast()
+
+  const structureQuery = useAsyncData(async () => {
+    if (!cameraId) throw new AppError('not_found', 'No se indicó la cámara.')
+    return versionService.getStructure(cameraId)
+  }, `structure|${cameraId}`)
+
+  const versionId = structureQuery.data?.id ?? null
 
   const query = useAsyncData(async () => {
     if (!versionId || !parameterId) throw new AppError('not_found', 'No se indicó el parámetro solicitado.')
@@ -42,7 +50,7 @@ export const ParameterDetailPage = () => {
     ])
     const index = buildTreeIndex(tree.items)
     const node = index.nodeById.get(parameter.nodeId)
-    if (!node) throw new AppError('not_found', 'El nodo del parámetro no existe o pertenece a otra versión.')
+    if (!node) throw new AppError('not_found', 'El nodo del parámetro no existe o pertenece a otra cámara.')
 
     return {
       parameter,
@@ -51,7 +59,7 @@ export const ParameterDetailPage = () => {
       history,
       path: [...ancestorsOf(index, node.id).map((ancestor) => ancestor.name), node.name],
     }
-  }, `parameter|${parameterId}`)
+  }, `parameter|${parameterId}|${versionId ?? 'none'}`)
 
   const [notes, setNotes] = useState<string | null>(null)
   const [savingNotes, setSavingNotes] = useState(false)
@@ -84,7 +92,7 @@ export const ParameterDetailPage = () => {
     try {
       await parameterService.remove(parameter.id)
       notify({ title: 'Parámetro eliminado', description: parameter.name, tone: 'success' })
-      navigate(`/cameras/${cameraId ?? ''}/versions/${versionId ?? ''}/settings/${parameter.nodeId}`)
+      navigate(`/cameras/${cameraId ?? ''}/settings/${parameter.nodeId}`)
     } catch (cause) {
       notify({
         title: 'No se pudo eliminar',
@@ -97,7 +105,7 @@ export const ParameterDetailPage = () => {
   }
 
   return (
-    <VersionSection
+    <CameraSection
       title={parameter?.name ?? 'Parámetro'}
       description={data?.path.join(' › ') ?? 'Ficha del ajuste.'}
       actions={
@@ -107,7 +115,7 @@ export const ParameterDetailPage = () => {
               size="sm"
               leadingIcon={<ArrowLeft aria-hidden="true" className="size-4" />}
               onClick={() =>
-                navigate(`/cameras/${cameraId ?? ''}/versions/${versionId ?? ''}/settings/${parameter.nodeId}`)
+                navigate(`/cameras/${cameraId ?? ''}/settings/${parameter.nodeId}`)
               }
             >
               Volver al nivel
@@ -175,7 +183,7 @@ export const ParameterDetailPage = () => {
               </dl>
             </Panel>
 
-            <Panel title="Nota del parámetro" description="Qué controla y qué has observado. Se conserva entre versiones.">
+            <Panel title="Nota del parámetro" description="Qué controla y qué has observado. Se guarda con el parámetro.">
               <Textarea
                 rows={6}
                 value={notesValue}
@@ -295,6 +303,7 @@ export const ParameterDetailPage = () => {
           </ConfirmDialog>
         </>
       )}
-    </VersionSection>
+    </CameraSection>
   )
 }
+

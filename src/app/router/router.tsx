@@ -1,13 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom'
 import {
-  LazyCameraPage,
   LazyCamerasPage,
-  LazyComparePage,
   LazyHistoryPage,
   LazyLoginPage,
   LazyParameterPage,
   LazySettingsPage,
-  LazyVersionOverviewPage,
 } from './lazyPages'
 import { HomePage } from '../../pages/HomePage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
@@ -33,16 +30,11 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <HomePage /> },
               { path: 'cameras', element: <LazyCamerasPage /> },
-              { path: 'cameras/:cameraId', element: <LazyCameraPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId', element: <LazyVersionOverviewPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/settings', element: <LazySettingsPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/settings/:nodeId', element: <LazySettingsPage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/compare', element: <LazyComparePage /> },
-              { path: 'cameras/:cameraId/versions/:versionId/history', element: <LazyHistoryPage /> },
-              {
-                path: 'cameras/:cameraId/versions/:versionId/parameters/:parameterId',
-                element: <LazyParameterPage />,
-              },
+              // La cámara abre directamente sus niveles: no hay «versiones» visibles.
+              { path: 'cameras/:cameraId', element: <LazySettingsPage /> },
+              { path: 'cameras/:cameraId/settings/:nodeId', element: <LazySettingsPage /> },
+              { path: 'cameras/:cameraId/history', element: <LazyHistoryPage /> },
+              { path: 'cameras/:cameraId/parameters/:parameterId', element: <LazyParameterPage /> },
               { path: '*', element: <NotFoundPage /> },
             ],
           },

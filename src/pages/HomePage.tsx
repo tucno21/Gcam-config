@@ -5,9 +5,9 @@ import { PageHeader } from '../components/layout/PageHeader'
 
 const WORKFLOW = [
   {
-    title: 'Crea la cámara y su versión',
+    title: 'Crea la cámara',
     description:
-      'Cada familia de GCam —LMC, AGC, BSG o cualquier otra— con sus versiones. Al cambiar de versión puedes duplicar los ajustes y partir de ahí.',
+      'Cada familia de GCam —LMC, AGC, BSG o cualquier otra— se registra una vez. Al cambiar de versión de GCam, duplica la cámara y ajusta lo que cambie.',
   },
   {
     title: 'Replica los ajustes',

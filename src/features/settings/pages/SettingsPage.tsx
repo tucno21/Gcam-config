@@ -16,8 +16,9 @@ import { toAppError } from '../../../lib/errors/AppError'
 import { nodeService } from '../../../services/nodeService'
 import { parameterService } from '../../../services/parameterService'
 import { settingsService } from '../../../services/settingsService'
+import { versionService } from '../../../services/versionService'
 import type { Parameter, ParameterNode } from '../../../services/types'
-import { VersionSection } from '../../versions/components/VersionSection'
+import { CameraSection } from '../../cameras/components/CameraSection'
 import { LevelDialog } from '../components/LevelDialog'
 import { LevelRow } from '../components/LevelRow'
 import { ParameterDialog } from '../components/ParameterDialog'
@@ -43,23 +44,30 @@ type ParameterDialogState =
  * efecto) y todo queda en el historial del parámetro.
  */
 export const SettingsPage = () => {
-  const { cameraId, versionId, nodeId } = useParams()
+  const { cameraId, nodeId } = useParams()
   const navigate = useNavigate()
   const { notify } = useToast()
-  useWorkspaceSelection(cameraId, versionId)
 
-  const base = `/cameras/${cameraId ?? ''}/versions/${versionId ?? ''}`
+  const structureQuery = useAsyncData(async () => {
+    if (!cameraId) throw new Error('No se indicó la cámara.')
+    return versionService.getStructure(cameraId)
+  }, `structure|${cameraId}`)
+
+  const versionId = structureQuery.data?.id ?? null
+  useWorkspaceSelection(cameraId, versionId ?? undefined)
+
+  const base = `/cameras/${cameraId ?? ''}`
   const settingsBase = `${base}/settings`
 
-  const nodesQuery = useAsyncData(() => {
-    if (!versionId) throw new Error('No se indicó la versión.')
-    return nodeService.listByVersion(versionId)
-  }, `nodes|${versionId}`)
+  const nodesQuery = useAsyncData(
+    () => (versionId ? nodeService.listByVersion(versionId) : Promise.resolve({ items: [], truncated: false })),
+    `nodes|${versionId ?? 'none'}`,
+  )
 
-  const parametersQuery = useAsyncData(() => {
-    if (!versionId) throw new Error('No se indicó la versión.')
-    return parameterService.listByVersion(versionId)
-  }, `parameters|${versionId}`)
+  const parametersQuery = useAsyncData(
+    () => (versionId ? parameterService.listByVersion(versionId) : Promise.resolve([])),
+    `parameters|${versionId ?? 'none'}`,
+  )
 
   const nodes = useMemo(() => nodesQuery.data?.items ?? [], [nodesQuery.data])
   const parameters = useMemo(() => parametersQuery.data ?? [], [parametersQuery.data])
@@ -131,7 +139,7 @@ export const SettingsPage = () => {
         tone: 'success',
       })
       if (currentId && branchIds(index, deletingLevel.id).includes(currentId)) {
-        navigate(deletingLevel.parentId ? `${settingsBase}/${deletingLevel.parentId}` : settingsBase)
+        navigate(deletingLevel.parentId ? `${settingsBase}/${deletingLevel.parentId}` : base)
       }
       setDeletingLevel(null)
       nodesQuery.reload()
@@ -218,8 +226,10 @@ export const SettingsPage = () => {
     }
   }
 
-  const isLoading = nodesQuery.status === 'loading' || parametersQuery.status === 'loading'
-  const hasError = nodesQuery.status === 'error' || parametersQuery.status === 'error'
+  const isLoading =
+    structureQuery.status === 'loading' || nodesQuery.status === 'loading' || parametersQuery.status === 'loading'
+  const hasError =
+    structureQuery.status === 'error' || nodesQuery.status === 'error' || parametersQuery.status === 'error'
 
   const canAddParameter = current !== null
 
@@ -250,7 +260,7 @@ export const SettingsPage = () => {
   )
 
   return (
-    <VersionSection
+    <CameraSection
       title={current?.name ?? 'Ajustes'}
       description={
         current?.description ??
@@ -269,7 +279,7 @@ export const SettingsPage = () => {
         <ErrorState
           title="No se pudieron cargar los ajustes"
           description={
-            (nodesQuery.error ?? parametersQuery.error)?.message ?? 'La versión no está disponible.'
+            (nodesQuery.error ?? parametersQuery.error)?.message ?? 'La estructura de la cámara no está disponible.'
           }
           onRetry={reloadAll}
         />
@@ -280,7 +290,7 @@ export const SettingsPage = () => {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Breadcrumbs
               items={[
-                { label: 'Ajustes', to: settingsBase },
+                { label: 'Ajustes', to: base },
                 ...(current
                   ? [
                       ...ancestorsOf(index, current.id).map((ancestor) => ({
@@ -315,9 +325,9 @@ export const SettingsPage = () => {
 
           {nodeId && !current && (
             <ErrorState
-              title="Este nivel no existe en la versión"
-              description="Puede que se haya eliminado o que pertenezca a otra versión."
-              onRetry={() => navigate(settingsBase)}
+              title="Este nivel no existe en la cámara"
+              description="Puede que se haya eliminado o que pertenezca a otra cámara."
+              onRetry={() => navigate(base)}
             />
           )}
 
@@ -333,7 +343,7 @@ export const SettingsPage = () => {
                       Crear el primer nivel
                     </Button>
                   }
-                  footnote="Cada cámara y versión tiene su propia estructura: nada se copia automáticamente."
+                  footnote="Cada cámara tiene su propia estructura: nada se copia automáticamente."
                 />
               )}
 
@@ -536,6 +546,7 @@ export const SettingsPage = () => {
           </ConfirmDialog>
         </>
       )}
-    </VersionSection>
+    </CameraSection>
   )
 }
+

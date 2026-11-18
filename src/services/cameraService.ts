@@ -1,6 +1,7 @@
 import { toAppError } from '../lib/errors/AppError'
 import { getSupabase } from '../lib/supabase/client'
 import { resolvePagination, sanitizeSearch } from './queryHelpers'
+import { versionService } from './versionService'
 import type { ActiveFilter, Camera, CameraInput, CameraListParams, CameraRow, Page } from './types'
 
 /**
@@ -140,6 +141,49 @@ export const cameraService = {
     }
   },
 
+  /**
+   * Duplica una cámara con toda su estructura y valores actuales.
+   * Pensado para «AGC 9.4 parte de lo que ya tenía en 8.2».
+   */
+  async duplicate(cameraId: string, input: { name: string; slug: string }): Promise<Camera> {
+    try {
+      const source = await this.getById(cameraId)
+      const created = await this.create({
+        name: input.name.trim(),
+        slug: input.slug.trim(),
+        description: source.description,
+        developer: source.developer,
+        websiteUrl: source.websiteUrl,
+        isActive: true,
+      })
+
+      const [sourceStructure, targetStructure] = await Promise.all([
+        versionService.getStructure(cameraId),
+        versionService.getStructure(created.id),
+      ])
+      await versionService.duplicateStructure(sourceStructure.id, targetStructure.id, { includeValues: true })
+
+      return created
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
+
+  /**
+   * Borra una cámara con toda su estructura, valores e historial.
+   * El historial es append-only para el cliente, así que el borrado completo se
+   * concentra en la función `public.delete_camera` (security definer), que valida
+   * la propiedad antes de eliminar en orden hijos-primero.
+   */
+  async remove(id: string): Promise<void> {
+    try {
+      const { error } = await getSupabase().rpc('delete_camera', { p_camera_id: id })
+      if (error) throw error
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
+
   /** Edita los campos enviados. No permite cambiar de propietario. */
   async update(id: string, input: Partial<CameraInput>): Promise<Camera> {
     try {
@@ -153,19 +197,6 @@ export const cameraService = {
   async setActive(id: string, isActive: boolean): Promise<Camera> {
     try {
       return await updateCamera(id, { isActive })
-    } catch (error) {
-      throw toAppError(error)
-    }
-  },
-
-  /**
-   * Elimina una cámara **solo** si no tiene versiones.
-   * Con dependencias la base responde `23503` y el servicio lo traduce a `conflict`.
-   */
-  async remove(id: string): Promise<void> {
-    try {
-      const { error } = await getSupabase().from('cameras').delete().eq('id', id)
-      if (error) throw error
     } catch (error) {
       throw toAppError(error)
     }

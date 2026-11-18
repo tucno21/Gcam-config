@@ -278,6 +278,9 @@ Además de los `CHECK`, quedan garantizadas por la base estas reglas de negocio:
 | `cameras` → `camera_versions` | `restrict` | no perder historia; archivar |
 | `camera_versions` → `parameter_nodes` | `restrict` | borrado explícito del árbol |
 | `parameter_nodes` → `parameter_nodes` | `restrict` | subárbol explícito, sin cascadas |
+
+`public.delete_camera(uuid)` (D-038) es el único camino que borra historial: valida
+que la cámara es del usuario y elimina en orden hijos-primero.
 | `parameter_nodes` → `parameters` | `restrict` | evitar huérfanos silenciosos |
 | `configurations` → `configuration_values` | `cascade` | los valores no existen sin el perfil |
 | `experiments` → `parameter_changes` | `restrict` | historial intocable |
@@ -331,6 +334,8 @@ Orden actual (6 migraciones):
 5. `20261118120400_parameter_changes_applied.sql` — `applied_to_profile` (D-031).
 6. `20261118120600_settings_mirror.sql` — `lineage_id`, `is_active`, valor actual,
    notas e historial sin experimento (D-037).
+7. `20261118120700_delete_camera.sql` — `public.delete_camera(uuid)` para borrar una
+   cámara con su estructura, valores e historial validando la propiedad (D-038).
 
 > `configurations`, `configuration_values` y `experiments` siguen existiendo y
 > mantienen sus políticas, pero **la interfaz ya no las usa** desde la Etapa 16

@@ -11,8 +11,9 @@ import { Select } from '../../../components/forms/Select'
 import { useAsyncData } from '../../../hooks/useAsyncData'
 import { formatDateTime } from '../../../lib/helpers/formatDate'
 import { historyService } from '../../../services/historyService'
+import { versionService } from '../../../services/versionService'
 import type { ChangeEffect, CurrentValueSource, DataType } from '../../../services/types'
-import { VersionSection } from '../../versions/components/VersionSection'
+import { CameraSection } from '../../cameras/components/CameraSection'
 import { EFFECT_LABEL } from '../valueFormat'
 
 const formatHistoryValue = (
@@ -37,17 +38,24 @@ const formatHistoryValue = (
 
 /** Cronología de cambios de la versión: qué se tocó, de qué a qué y con qué efecto. */
 export const HistoryPage = () => {
-  const { cameraId, versionId } = useParams()
+  const { cameraId } = useParams()
+
+  const structureQuery = useAsyncData(async () => {
+    if (!cameraId) throw new Error('No se indicó la cámara.')
+    return versionService.getStructure(cameraId)
+  }, `structure|${cameraId}`)
+
+  const versionId = structureQuery.data?.id ?? null
 
   const [search, setSearch] = useState('')
   const [effect, setEffect] = useState<ChangeEffect | 'all'>('all')
   const [includeRetired, setIncludeRetired] = useState(true)
   const [visible, setVisible] = useState(50)
 
-  const query = useAsyncData(() => {
-    if (!versionId) throw new Error('No se indicó la versión.')
-    return historyService.listAllByVersion(versionId)
-  }, `history|${versionId}`)
+  const query = useAsyncData(
+    () => (versionId ? historyService.listAllByVersion(versionId) : Promise.resolve([])),
+    `history|${versionId ?? 'none'}`,
+  )
 
   const entries = useMemo(() => query.data ?? [], [query.data])
 
@@ -66,7 +74,7 @@ export const HistoryPage = () => {
   }, [entries, search, effect, includeRetired])
 
   return (
-    <VersionSection
+    <CameraSection
       title="Historial"
       description="Todo cambio de valor queda aquí con su antes, después, comentario y efecto. No se edita ni se borra."
     >
@@ -132,7 +140,7 @@ export const HistoryPage = () => {
                 <li key={entry.id} className="px-4 py-3.5 sm:px-5">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Link
-                      to={`/cameras/${cameraId ?? ''}/versions/${versionId ?? ''}/parameters/${entry.parameterId}`}
+                      to={`/cameras/${cameraId ?? ''}/parameters/${entry.parameterId}`}
                       className="text-[13px] font-medium text-ink underline decoration-line-strong underline-offset-4 hover:text-accent"
                     >
                       {entry.parameterName}
@@ -175,6 +183,6 @@ export const HistoryPage = () => {
           )}
         </>
       )}
-    </VersionSection>
+    </CameraSection>
   )
 }

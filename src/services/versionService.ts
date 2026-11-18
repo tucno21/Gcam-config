@@ -70,6 +70,21 @@ const updateVersion = async (id: string, input: Partial<VersionInput>): Promise<
 }
 
 export const versionService = {
+  /**
+   * Estructura de ajustes de una cámara. En la interfaz no existen «versiones»:
+   * cada cámara tiene una sola estructura interna, que se crea sola si falta.
+   * (La tabla `camera_versions` sigue siendo el ancla de los nodos.)
+   */
+  async getStructure(cameraId: string): Promise<CameraVersion> {
+    try {
+      const page = await this.listByCamera(cameraId, { active: 'all', limit: 100 })
+      const existing = page.items.find((candidate) => candidate.isDefault) ?? page.items[0]
+      if (existing) return existing
+      return await this.create(cameraId, { version: 'estructura', isDefault: true })
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
   /** Versiones de una cámara, de la más reciente a la más antigua por etiqueta. */
   async listByCamera(
     cameraId: string,
@@ -191,12 +206,13 @@ export const versionService = {
   },
 
   /**
-   * Duplica la **estructura de ajustes** de una versión en otra (misma cámara).
-   * Es una acción explícita: jamás se ejecuta sola ni al crear una versión.
+   * Duplica la **estructura de ajustes** de una cámara en otra.
+   * Es una acción explícita: jamás se ejecuta sola.
    *
-   * Copia nodos (jerarquía, orden, estado y `lineage_id`) y la definición de sus
-   * parámetros, incluidos `lineage_id`, notas y —si se pide— el valor actual.
-   * **No** copia historial ni experimentos: esos datos pertenecen a cada versión.
+   * Copia nodos (jerarquía, orden, estado y `lineage_id`) y los parámetros con
+   * `lineage_id`, notas y —si se pide— el valor actual. **No** copia historial.
+   * Se inserta por niveles y por lotes para que una cámara con cientos de
+   * parámetros no haga cientos de peticiones.
    */
   async duplicateStructure(
     sourceVersionId: string,
@@ -205,68 +221,93 @@ export const versionService = {
   ): Promise<{ nodes: number; parameters: number }> {
     try {
       if (sourceVersionId === targetVersionId) {
-        throw new AppError('validation', 'Elige una versión de destino distinta a la de origen.')
+        throw new AppError('validation', 'Elige una estructura de destino distinta a la de origen.')
       }
 
-      const [source, target] = await Promise.all([this.getById(sourceVersionId), this.getById(targetVersionId)])
-      if (source.cameraId !== target.cameraId) {
-        throw new AppError('validation', 'Ambas versiones deben pertenecer a la misma cámara.')
-      }
-
-      // Nodos en orden padres-primero para poder remapear `parent_id`.
+      const supabase = getSupabase()
       const { items: nodes } = await nodeService.listByVersion(sourceVersionId)
-      const byParent = new Map<string | null, ParameterNode[]>()
+      const childrenByParent = new Map<string | null, ParameterNode[]>()
       for (const node of nodes) {
-        const siblings = byParent.get(node.parentId) ?? []
+        const siblings = childrenByParent.get(node.parentId) ?? []
         siblings.push(node)
-        byParent.set(node.parentId, siblings)
+        childrenByParent.set(node.parentId, siblings)
       }
 
       const idMap = new Map<string, string>()
-      const walk = async (parentId: string | null): Promise<number> => {
-        let created = 0
-        for (const node of byParent.get(parentId) ?? []) {
-          const copy = await nodeService.create({
-            cameraVersionId: targetVersionId,
-            parentId: parentId === null ? null : (idMap.get(parentId) ?? null),
-            name: node.name,
-            description: node.description,
-            nodeType: node.nodeType,
-            sortOrder: node.sortOrder,
-            isActive: node.isActive,
-            lineageId: node.lineageId,
-          })
-          idMap.set(node.id, copy.id)
-          created += 1 + (await walk(node.id))
+      let nodeCount = 0
+
+      // Un INSERT por grupo de hermanos: los nombres son únicos dentro del padre,
+      // así que sirven para emparejar la respuesta con el nodo de origen.
+      const insertLevel = async (sourceParentId: string | null, targetParentId: string | null): Promise<void> => {
+        const siblings = childrenByParent.get(sourceParentId) ?? []
+        if (siblings.length === 0) return
+
+        const { data, error } = await supabase
+          .from('parameter_nodes')
+          .insert(
+            siblings.map((node) => ({
+              camera_version_id: targetVersionId,
+              parent_id: targetParentId,
+              name: node.name,
+              description: node.description,
+              node_type: node.nodeType,
+              sort_order: node.sortOrder,
+              is_active: node.isActive,
+              lineage_id: node.lineageId,
+            })),
+          )
+          .select('id, name')
+
+        if (error) throw error
+        const inserted = (data ?? []) as Array<{ id: string; name: string }>
+        nodeCount += inserted.length
+
+        for (const sibling of siblings) {
+          const copy = inserted.find((row) => row.name === sibling.name)
+          if (copy) idMap.set(sibling.id, copy.id)
         }
-        return created
-      }
-      const nodeCount = await walk(null)
 
-      // Definición de parámetros de la versión de origen, apuntando a los nodos nuevos.
+        for (const sibling of siblings) {
+          const targetId = idMap.get(sibling.id)
+          if (targetId) await insertLevel(sibling.id, targetId)
+        }
+      }
+
+      await insertLevel(null, null)
+
+      // Parámetros por lotes, con el nodo ya remapeado.
       const parameters = await parameterService.listByVersion(sourceVersionId)
-      for (const parameter of parameters) {
-        await parameterService.create({
-          nodeId: idMap.get(parameter.nodeId) ?? '',
-          lineageId: parameter.lineageId,
-          key: parameter.key,
-          name: parameter.name,
-          description: parameter.description,
-          notes: parameter.notes,
-          dataType: parameter.dataType,
-          unit: parameter.unit,
-          defaultValue: parameter.defaultValue ?? undefined,
-          defaultValueSource: parameter.defaultValueSource,
-          defaultValueConfidence: parameter.defaultValueConfidence,
-          allowedValues: parameter.allowedValues,
-          sortOrder: parameter.sortOrder,
-          isActive: parameter.isActive,
-          currentValue: options?.includeValues ? (parameter.currentValue ?? null) : null,
-          currentValueSource: options?.includeValues ? parameter.currentValueSource : 'unknown',
-        })
+      const rows = parameters.flatMap((parameter) => {
+        const nodeId = idMap.get(parameter.nodeId)
+        if (!nodeId) return []
+        return [
+          {
+            node_id: nodeId,
+            lineage_id: parameter.lineageId,
+            key: parameter.key,
+            name: parameter.name,
+            description: parameter.description,
+            notes: parameter.notes,
+            data_type: parameter.dataType,
+            unit: parameter.unit,
+            default_value: parameter.defaultValue ?? null,
+            default_value_source: parameter.defaultValueSource,
+            default_value_confidence: parameter.defaultValueConfidence,
+            allowed_values: parameter.allowedValues,
+            current_value: options?.includeValues ? (parameter.currentValue ?? null) : null,
+            current_value_source: options?.includeValues ? parameter.currentValueSource : 'unknown',
+            sort_order: parameter.sortOrder,
+            is_active: parameter.isActive,
+          },
+        ]
+      })
+
+      for (let index = 0; index < rows.length; index += 100) {
+        const { error } = await supabase.from('parameters').insert(rows.slice(index, index + 100))
+        if (error) throw error
       }
 
-      return { nodes: nodeCount, parameters: parameters.length }
+      return { nodes: nodeCount, parameters: rows.length }
     } catch (error) {
       throw toAppError(error)
     }

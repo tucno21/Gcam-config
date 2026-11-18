@@ -10,17 +10,8 @@ import { PageLoader } from '../../components/feedback/PageLoader'
 export const LazyCamerasPage = lazy(() =>
   import('../../features/cameras/pages/CamerasPage').then((module) => ({ default: module.CamerasPage })),
 )
-export const LazyCameraPage = lazy(() =>
-  import('../../features/versions/pages/CameraPage').then((module) => ({ default: module.CameraPage })),
-)
-export const LazyVersionOverviewPage = lazy(() =>
-  import('../../features/versions/pages/VersionOverviewPage').then((module) => ({ default: module.VersionOverviewPage })),
-)
 export const LazySettingsPage = lazy(() =>
   import('../../features/settings/pages/SettingsPage').then((module) => ({ default: module.SettingsPage })),
-)
-export const LazyComparePage = lazy(() =>
-  import('../../features/settings/pages/ComparePage').then((module) => ({ default: module.ComparePage })),
 )
 export const LazyHistoryPage = lazy(() =>
   import('../../features/settings/pages/HistoryPage').then((module) => ({ default: module.HistoryPage })),

@@ -7,9 +7,10 @@ Léela completa antes de modificar código. El alcance funcional de referencia e
 ## 1. Objetivo y alcance
 
 Aplicación web **privada**, responsive y de bajo costo para catalogar cámaras GCam
-(LMC, AGC, BSG y las que el usuario registre), sus versiones y el **espejo de sus
-ajustes**: niveles del menú, parámetros con su valor actual, notas y el historial de
-qué se cambió y si mejoró.
+(LMC, AGC, BSG y las que el usuario registre) y el **espejo de sus ajustes**: niveles
+del menú, parámetros con su valor actual, notas y el historial de qué se cambió y si
+mejoró. Las «versiones» de la app GCam se modelan como **cámaras distintas** y se
+duplican cuando se quiere partir de la anterior; no se muestran como concepto.
 
 La aplicación es un **catálogo y laboratorio de documentación**: no modifica la app
 GCam instalada en el teléfono. Los cambios los aplica el usuario a mano y aquí solo
@@ -83,8 +84,8 @@ src/
   components/     # reutilizables, sin lógica de negocio
     common/ layout/ feedback/ forms/
   features/       # un módulo por dominio
-    auth/ cameras/ versions/
-    settings/     # espejo de ajustes, comparación e historial
+    auth/ cameras/
+    settings/     # espejo de ajustes e historial
   hooks/          # hooks compartidos
   lib/            # supabase/ axios/ errors/ config/ constants/ helpers/ validation/
   services/       # acceso a datos por dominio + types.ts del contrato
@@ -217,10 +218,11 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
   parámetro».
 - Modelo: `parameter_nodes.parent_id` (nullable) + `sort_order` + `lineage_id`. El
   nodo raíz tiene `parent_id = NULL`.
-- Un árbol pertenece a **una** `camera_version_id`; prohibido mover nodos entre
-  versiones.
-- `lineage_id` identifica el mismo nivel/parámetro entre versiones (sobrevive a
-  renombrar y a duplicar). Es lo que permite comparar AGC 8.2 con AGC 9.4.
+- Un árbol pertenece a **una** cámara. Internamente cuelga de `camera_versions`
+  (una por cámara, creada automáticamente); ese detalle **no se muestra** en la
+  interfaz: la cámara abre directamente sus niveles.
+- `lineage_id` identifica el mismo nivel/parámetro entre cámaras duplicadas
+  (sobrevive a renombrar y a duplicar la cámara).
 - `is_active = false` significa **retirado en esta versión**: se conserva con su
   historial y se oculta salvo que se pidan los retirados. Nunca borrar lo que tiene
   historial.
@@ -441,4 +443,5 @@ Una etapa está terminada cuando:
   (*Authentication → URL Configuration → Site URL*, p. ej. `http://localhost:5173`)
   para que los enlaces de correo no caigan en `localhost:3000`. Recomendado resetear
   la contraseña de la base tras terminarla de usar fuera del panel.
+
 
