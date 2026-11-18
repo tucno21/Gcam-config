@@ -1,0 +1,38 @@
+# Configuración local del proyecto Supabase.
+#
+# Contiene solo lo que este repositorio necesita; el CLI aplica sus valores por
+# defecto en el resto. `supabase init` no es necesario: este archivo ya existe.
+#
+# Flujo:
+#   supabase login
+#   supabase link --project-ref <ref-del-proyecto>
+#   supabase db push
+#
+# Ver docs/SETUP-SUPABASE.md.
+
+project_id = "gcam"
+
+[api]
+enabled = true
+port = 54321
+# Esquemas expuestos por la API REST generada.
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+enabled = true
+# Desarrollo local de Vite.
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+jwt_expiry = 3600
+enable_signup = true

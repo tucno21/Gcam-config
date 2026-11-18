@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# Entorno: los valores reales nunca se versionan (solo .env.example)
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+
+# Supabase CLI: estado local y credenciales de vinculación
+supabase/.temp
+supabase/.branches
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

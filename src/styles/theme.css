@@ -1,0 +1,50 @@
+/*
+ * Tokens del sistema visual.
+ *
+ * Dirección: mesa de laboratorio óptico. Negro neutro, un solo tono de superficie
+ * que solo cambia de luminosidad, hairlines de baja opacidad y un único acento
+ * cálido (tungsteno) reservado para acción y estado activo.
+ *
+ * Cualquier color nuevo debe declararse aquí; las vistas no usan hex sueltos.
+ */
+@theme {
+  /* Superficies: mismo tono, solo luminosidad */
+  --color-canvas: #0a0b0d;
+  --color-surface: #101216;
+  --color-surface-raised: #15181d;
+  --color-surface-sunken: #08090b;
+
+  /* Líneas: hairlines, no bordes duros */
+  --color-line: rgb(255 255 255 / 0.07);
+  --color-line-strong: rgb(255 255 255 / 0.13);
+
+  /* Texto: cuatro niveles de jerarquía */
+  --color-ink: #e8eaed;
+  --color-ink-muted: #a3aab5;
+  --color-ink-faint: #838b97;
+  --color-ink-disabled: #5b626d;
+
+  /* Acento único: tungsteno sobre negro */
+  --color-accent: #e6a33f;
+  --color-accent-strong: #f2b558;
+  --color-accent-ink: #1a1205;
+
+  /* Semánticos, desaturados para fondo oscuro */
+  --color-success: #57bf82;
+  --color-warning: #dda63c;
+  --color-danger: #e8705f;
+
+  /* Tipografía: sistema + mono para claves y valores */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Radios: escala concéntrica (panel = control + padding) */
+  --radius-control: 6px;
+  --radius-panel: 12px;
+  --radius-dialog: 16px;
+
+  /* Movimiento: salida suave, nunca ease-in */
+  --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
+}

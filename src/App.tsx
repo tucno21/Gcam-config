@@ -1,11 +1,11 @@
+import { RouterProvider } from 'react-router-dom'
+import { AppProviders } from './app/providers/AppProviders'
+import { router } from './app/router/router'
 
-
-const App = () => {
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <h1 className="text-3xl font-bold underline">gcam</h1>
-    </div>
-  )
-}
+const App = () => (
+  <AppProviders>
+    <RouterProvider router={router} />
+  </AppProviders>
+)
 
 export default App
