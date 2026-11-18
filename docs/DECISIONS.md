@@ -460,3 +460,27 @@ con experimentos falla por `23503` y la UI sugiere archivarlo. Los contadores de
 lista usan el embed `configuration_values(count)`; la edición de valores se hace fila a
 fila, sin guardados masivos que puedan dejar valores a medias.
 
+---
+
+## D-031 — Un cambio se aplica al perfil solo si el usuario lo marca; el historial es inmutable
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+Al registrar un cambio en un experimento se elige explícitamente **«Aplicar al perfil
+ahora»** (marcado por defecto). Con la marca, el valor de `configuration_values` se
+actualiza y queda el registro en `parameter_changes` con `applied_to_profile = true`;
+sin la marca, el perfil no se toca y el registro queda como historial
+(`applied_to_profile = false`). La columna se añadió en la migración
+`20261118120400_parameter_changes_applied.sql`.
+
+**Motivo:** la tarea exige definir cuándo un cambio afecta al perfil y cuándo es solo
+constancia, y prohíbe que editar un experimento antiguo altere la configuración actual.
+Sin esta marca la cronología sería ambigua.
+
+**Consecuencia:** editar metadatos de un experimento (título, observaciones,
+conclusión, estado) nunca toca el perfil; los cambios no se editan ni borran. La ruta
+se guarda como `path_snapshot` (nombres de nodo en el momento) y no se recalcula.
+Duplicar un experimento copia solo título/objetivo/hipótesis y perfil: el historial del
+original no se replica. Borrar un experimento con cambios falla por `23503` (historial
+intocable).
+

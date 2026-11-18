@@ -27,9 +27,26 @@ import type {
 const EXPERIMENT_COLUMNS =
   'id, configuration_id, title, objective, hypothesis, status, observations, conclusion, started_at, completed_at, created_at, updated_at' as const
 
-const toExperiment = (row: ExperimentRow): Experiment => ({
+/** Columnas con perfil y conteo de cambios para los listados. */
+const EXPERIMENT_LIST_COLUMNS =
+  `${EXPERIMENT_COLUMNS}, configurations(name), parameter_changes(count)` as const
+
+type ExperimentListRow = ExperimentRow & {
+  /** PostgREST devuelve el embed como objeto o array según la inferencia de tipos. */
+  configurations?: { name: string } | Array<{ name: string }> | null
+  parameter_changes?: Array<{ count: number }>
+}
+
+const configurationNameOf = (row: ExperimentListRow): string => {
+  const embedded = row.configurations
+  if (!embedded) return 'Perfil'
+  return Array.isArray(embedded) ? (embedded[0]?.name ?? 'Perfil') : embedded.name
+}
+
+const toExperiment = (row: ExperimentRow, configurationName = '', changeCount = 0): Experiment => ({
   id: row.id,
   configurationId: row.configuration_id,
+  configurationName,
   title: row.title,
   objective: row.objective,
   hypothesis: row.hypothesis,
@@ -38,9 +55,13 @@ const toExperiment = (row: ExperimentRow): Experiment => ({
   conclusion: row.conclusion,
   startedAt: row.started_at,
   completedAt: row.completed_at,
+  changeCount,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 })
+
+const toExperimentFromList = (row: ExperimentListRow): Experiment =>
+  toExperiment(row, configurationNameOf(row), row.parameter_changes?.[0]?.count ?? 0)
 
 const toRowPatch = (input: ExperimentPatch): Partial<ExperimentRow> => {
   const patch: Partial<ExperimentRow> = {}
@@ -77,14 +98,14 @@ export const experimentService = {
       const { limit, offset, from, to } = resolvePagination(params)
       const { data, error, count } = await getSupabase()
         .from('experiments')
-        .select(EXPERIMENT_COLUMNS, { count: 'exact' })
+        .select(EXPERIMENT_LIST_COLUMNS, { count: 'exact' })
         .eq('configuration_id', configurationId)
         .order('created_at', { ascending: false })
         .range(from, to)
-        .returns<ExperimentRow[]>()
+        .returns<ExperimentListRow[]>()
 
       if (error) throw error
-      return { items: (data ?? []).map(toExperiment), total: count ?? 0, limit, offset }
+      return { items: (data ?? []).map(toExperimentFromList), total: count ?? 0, limit, offset }
     } catch (error) {
       throw toAppError(error)
     }
@@ -102,13 +123,13 @@ export const experimentService = {
       if (configurations.length === 0) return { items: [], total: 0, limit, offset }
 
       const configurationIds = configurations.map((configuration) => configuration.id)
-      const results: ExperimentRow[] = []
+      const results: ExperimentListRow[] = []
       let total = 0
 
       for (const ids of chunkIds(configurationIds)) {
         const { data, error, count } = await getSupabase()
           .from('experiments')
-          .select(EXPERIMENT_COLUMNS, { count: 'exact' })
+          .select(EXPERIMENT_LIST_COLUMNS, { count: 'exact' })
           .in('configuration_id', ids)
           .order('created_at', { ascending: false })
 
@@ -119,7 +140,7 @@ export const experimentService = {
 
       results.sort((a, b) => b.created_at.localeCompare(a.created_at))
       return {
-        items: results.slice(from, to + 1).map(toExperiment),
+        items: results.slice(from, to + 1).map(toExperimentFromList),
         total,
         limit,
         offset,
@@ -133,13 +154,13 @@ export const experimentService = {
     try {
       const { data, error } = await getSupabase()
         .from('experiments')
-        .select(EXPERIMENT_COLUMNS)
+        .select(EXPERIMENT_LIST_COLUMNS)
         .eq('id', id)
         .single()
-        .returns<ExperimentRow>()
+        .returns<ExperimentListRow>()
 
       if (error) throw error
-      return toExperiment(data)
+      return toExperimentFromList(data)
     } catch (error) {
       throw toAppError(error)
     }
@@ -149,13 +170,19 @@ export const experimentService = {
     try {
       if (!input.title.trim()) throw new AppError('validation', 'El título del experimento es obligatorio.')
 
+      const now = new Date().toISOString()
+      const status = input.status ?? 'planned'
+      const closing = status === 'completed' || status === 'failed' || status === 'inconclusive'
+
       const { data, error } = await getSupabase()
         .from('experiments')
         .insert({
           configuration_id: input.configurationId,
           title: input.title.trim(),
           ...toRowPatch({ ...input }),
-          status: input.status ?? 'planned',
+          status,
+          started_at: status === 'planned' ? (input.startedAt ?? null) : (input.startedAt ?? now),
+          completed_at: closing ? (input.completedAt ?? now) : (input.completedAt ?? null),
         })
         .select(EXPERIMENT_COLUMNS)
         .single()
@@ -176,13 +203,37 @@ export const experimentService = {
     }
   },
 
-  /** Cambia el estado y, si aplica, sella la fecha de finalización. */
+  /** Cambia el estado sellando inicio y finalización según corresponda. */
   async setStatus(id: string, status: ExperimentStatus): Promise<Experiment> {
     try {
+      const current = await this.getById(id)
+      const now = new Date().toISOString()
       const closing = status === 'completed' || status === 'failed' || status === 'inconclusive'
+
       return await updateExperiment(id, {
         status,
-        completedAt: closing ? new Date().toISOString() : null,
+        startedAt: status === 'planned' ? null : (current.startedAt ?? now),
+        completedAt: closing ? now : null,
+      })
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
+
+  /**
+   * Duplica un experimento como base de uno nuevo.
+   * Copia título/objetivo/hipótesis y perfil; **no** copia cambios ni
+   * resultados: el historial del original es único y no se replica.
+   */
+  async duplicate(id: string): Promise<Experiment> {
+    try {
+      const source = await this.getById(id)
+      return await this.create({
+        configurationId: source.configurationId,
+        title: `${source.title} (copia)`,
+        objective: source.objective,
+        hypothesis: source.hypothesis,
+        status: 'planned',
       })
     } catch (error) {
       throw toAppError(error)

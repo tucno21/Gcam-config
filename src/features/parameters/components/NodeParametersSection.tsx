@@ -111,6 +111,7 @@ export const NodeParametersSection = ({ node, parameters, onChanged }: NodeParam
         description: `${toAppError(cause).message} Si ya tiene valores en perfiles, desactívalo en lugar de borrarlo.`,
         tone: 'danger',
       })
+      setDeleting(null)
     } finally {
       setDeleteBusy(false)
     }

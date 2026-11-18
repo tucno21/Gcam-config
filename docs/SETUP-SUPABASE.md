@@ -1,10 +1,11 @@
 # Puesta en marcha de Supabase
 
 **Estado:** Etapa 4. El esquema está **aplicado y verificado** en el proyecto
-alojado `yyfgsvcngakunqwgaktb` (9 tablas, 34 políticas, 13 triggers). Las migraciones
-quedaron registradas en `supabase_migrations.schema_migrations`, igual que lo haría
-`supabase db push`, así que futuras migraciones entran por la CLI o por SQL Editor.
-Este documento explica los caminos posibles.
+alojado `yyfgsvcngakunqwgaktb` (9 tablas, 34 políticas, 13 triggers y la migración de
+privilegios). Las migraciones quedaron registradas en
+`supabase_migrations.schema_migrations`, igual que lo haría `supabase db push`, así
+que futuras migraciones entran por la CLI o por SQL Editor. Este documento explica los
+caminos posibles.
 
 ---
 
@@ -17,6 +18,7 @@ Este documento explica los caminos posibles.
 | `supabase/migrations/20261118120100_functions_triggers.sql` | `updated_at`, validación de valores, guardas del árbol, helpers RLS |
 | `supabase/migrations/20261118120200_rls_policies.sql` | RLS, políticas por operación y privilegios |
 | `supabase/migrations/20261118120300_privileges_hardening.sql` | revoca los privilegios por defecto de Supabase (D-025) |
+| `supabase/migrations/20261118120400_parameter_changes_applied.sql` | marca `applied_to_profile` en el historial (D-031) |
 | `supabase/seed.sql` | semilla **ficticia** y opcional |
 | `supabase/tests/rls.sql` | pruebas de aislamiento e integridad |
 

@@ -28,6 +28,8 @@ En construcción por etapas. Ver [`docs/ROADMAP.md`](docs/ROADMAP.md).
   procedencia y certeza, ficha con ruta y cámara/versión (D-029)
 - Etapa 9 — perfiles: completa. Varios perfiles por versión, valores comparados
   con el predeterminado, filtros y restauración explícita (D-030)
+- Etapa 10 — experimentos e historial: completa. Cambios aplicados al perfil o solo
+  históricos, ruta congelada, cronología, comparación y estadísticas (D-031)
 - Etapas 5–15: pendientes
 
 La navegación, el layout responsive y los componentes base funcionan. La app exige

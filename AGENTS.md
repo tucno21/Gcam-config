@@ -327,9 +327,20 @@ Una etapa está terminada cuando:
   Verificado con E2E: valores enteros/booleanos/enum, filtros, restauración con
   confirmación, duplicado, renombrado, predeterminado, archivado, eliminación y
   predeterminados intactos en BD; cero errores de consola y base limpia.
+- **Etapa 10** — experimentos e historial: completada. Experimentos por perfil con
+  estado (planificado/en curso/completado/fallido/no concluyente), fechas de
+  inicio/fin, objetivo, hipótesis, observaciones y conclusión; cambios con valor
+  anterior/nuevo, motivo, observación y **ruta congelada** (`path_snapshot`),
+  aplicados al perfil o solo históricos (columna nueva, D-031); cronología por
+  experimento y página de Historial con filtros; comparación de dos experimentos y
+  parámetros más modificados; duplicado sin historial y borrado bloqueado si hay
+  cambios. Verificado con E2E: aplicado sí toca el perfil (25), solo historial no lo
+  toca, ruta intacta tras renombrar el nodo, editar el experimento no altera el
+  perfil, comparación y estadísticas, borrados según dependencias.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
-  aplicado con **4 migraciones** registradas en `supabase_migrations.schema_migrations`,
-  incluida la de endurecimiento de privilegios (D-025). Verificado con el usuario
+  aplicado con **5 migraciones** registradas en `supabase_migrations.schema_migrations`,
+  incluida la de endurecimiento de privilegios (D-025) y la marca `applied_to_profile`
+  del historial (D-031). Verificado con el usuario
   real: `anon` → `42501`, CRUD de extremo a extremo en verde (19 comprobaciones) y
   todos los bloqueos del modelo activos. El acceso administrativo va por el pooler
   `aws-1-us-east-1.pooler.supabase.com` porque el host directo solo tiene IPv6.

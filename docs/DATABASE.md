@@ -200,10 +200,13 @@ Historial **append-only** de cambios dentro de un experimento.
 | `reason` | text | |
 | `observation` | text | |
 | `path_snapshot` | jsonb | instantánea de nombres jerárquicos al momento del cambio |
+| `applied_to_profile` | boolean not null default false | `true` si al registrar también se actualizó el perfil |
 | `created_at` | timestamptz not null default now() | |
 
 - Sin `update` ni `delete` para clientes: solo `insert` y `select` por RLS.
 - `path_snapshot` conserva la ruta aunque luego se renombre un nodo.
+- `applied_to_profile` fija al insertar si el cambio también actualizó
+  `configuration_values`; no existe `update` para esa marca (D-031).
 
 ### `ai_recommendations`
 

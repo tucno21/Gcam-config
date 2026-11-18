@@ -74,6 +74,8 @@ Usuario → form (validación local) → hook de feature → service → Supabas
 | `src/features/hierarchy/` | constructor del árbol: `treeUtils`, `NodeRow`, detalle, formulario y drag & drop | ✅ Etapa 7 |
 | `src/features/parameters/` | parámetros: formulario tipado, lista por nodo, ficha y formato de valores | ✅ Etapa 8 |
 | `src/features/configurations/` | perfiles: lista, formulario, comparación de valores y restauración | ✅ Etapa 9 |
+| `src/features/experiments/` | experimentos: formulario, cambios con ruta congelada, detalle, comparación y estadísticas | ✅ Etapa 10 |
+| `src/features/history/` | cronología de cambios de la versión con filtros | ✅ Etapa 10 |
 | `src/features/cameras/` | catálogo real: página, `CameraFormDialog` y validación del dominio | ✅ Etapa 5 |
 | `src/features/versions/` | versiones reales: formulario, duplicación de estructura, ficha (resumen) | ✅ Etapa 6 |
 | `src/features/<modulo>/` | `pages/`, `components/`, hooks y validación del dominio | ✅ parcial |

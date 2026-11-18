@@ -153,6 +153,7 @@ export const ConfigurationsPage = () => {
         description: `${toAppError(cause).message} La alternativa segura es archivarlo.`,
         tone: 'danger',
       })
+      setDeleting(null)
     } finally {
       setDeleteBusy(false)
     }

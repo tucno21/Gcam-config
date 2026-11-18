@@ -1,6 +1,6 @@
 import { toAppError } from '../lib/errors/AppError'
 import { getSupabase } from '../lib/supabase/client'
-import { chunkIds, resolvePagination } from './queryHelpers'
+import { chunkIds, MAX_ROWS, resolvePagination } from './queryHelpers'
 import { configurationService } from './configurationService'
 import type { Page, ParameterChange, ParameterChangeInput, ParameterChangeRow } from './types'
 
@@ -17,7 +17,7 @@ import type { Page, ParameterChange, ParameterChangeInput, ParameterChangeRow } 
  */
 
 const CHANGE_COLUMNS =
-  'id, experiment_id, parameter_id, previous_value, new_value, reason, observation, path_snapshot, created_at' as const
+  'id, experiment_id, parameter_id, previous_value, new_value, reason, observation, path_snapshot, applied_to_profile, created_at' as const
 
 const toChange = (row: ParameterChangeRow): ParameterChange => ({
   id: row.id,
@@ -28,6 +28,7 @@ const toChange = (row: ParameterChangeRow): ParameterChange => ({
   reason: row.reason,
   observation: row.observation,
   pathSnapshot: row.path_snapshot,
+  appliedToProfile: row.applied_to_profile,
   createdAt: row.created_at,
 })
 
@@ -114,6 +115,7 @@ export const historyService = {
           reason: input.reason?.trim() || null,
           observation: input.observation?.trim() || null,
           path_snapshot: input.pathSnapshot ?? null,
+          applied_to_profile: input.appliedToProfile,
         })
         .select(CHANGE_COLUMNS)
         .single()
@@ -121,6 +123,26 @@ export const historyService = {
 
       if (error) throw error
       return toChange(data)
+    } catch (error) {
+      throw toAppError(error)
+    }
+  },
+
+  /**
+   * Todos los cambios de la versión (tope 5 000) para cronología y estadísticas.
+   * Pagina internamente con el listado normal: nunca descarga sin límite.
+   */
+  async listAllByVersion(versionId: string): Promise<ParameterChange[]> {
+    try {
+      const items: ParameterChange[] = []
+
+      while (items.length < MAX_ROWS) {
+        const page = await this.listByVersion(versionId, { limit: 100, offset: items.length })
+        items.push(...page.items)
+        if (page.items.length === 0 || items.length >= page.total) break
+      }
+
+      return items.slice(0, MAX_ROWS)
     } catch (error) {
       throw toAppError(error)
     }

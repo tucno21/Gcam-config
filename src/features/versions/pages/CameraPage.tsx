@@ -149,6 +149,7 @@ export const CameraPage = () => {
         description: `${toAppError(cause).message} La alternativa segura es archivarla.`,
         tone: 'danger',
       })
+      setDeletingVersion(null)
     } finally {
       setDeleteBusy(false)
     }

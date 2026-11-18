@@ -297,6 +297,8 @@ export type ExperimentRow = {
 export type Experiment = {
   id: string
   configurationId: string
+  /** Nombre del perfil usado, para mostrar el contexto sin consultas extra. */
+  configurationName: string
   title: string
   objective: string | null
   hypothesis: string | null
@@ -305,6 +307,8 @@ export type Experiment = {
   conclusion: string | null
   startedAt: string | null
   completedAt: string | null
+  /** Cambios registrados en el historial. */
+  changeCount: number
   createdAt: string
   updatedAt: string
 }
@@ -332,6 +336,7 @@ export type ParameterChangeRow = {
   reason: string | null
   observation: string | null
   path_snapshot: string[] | null
+  applied_to_profile: boolean
   created_at: string
 }
 
@@ -345,6 +350,8 @@ export type ParameterChange = {
   observation: string | null
   /** Ruta jerárquica congelada en el momento del cambio. */
   pathSnapshot: string[] | null
+  /** `true` si al registrarlo también se actualizó el valor del perfil. */
+  appliedToProfile: boolean
   createdAt: string
 }
 
@@ -356,4 +363,5 @@ export type ParameterChangeInput = {
   reason?: string | null
   observation?: string | null
   pathSnapshot?: string[] | null
+  appliedToProfile: boolean
 }
