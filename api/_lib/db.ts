@@ -1,7 +1,7 @@
-import type { RequestContext } from './rest'
-import { rest } from './rest'
-import type { ExperimentStatusValue, Pagination } from './validation'
-import { MAX_TREE_NODES } from './validation'
+import type { RequestContext } from './rest.js'
+import { rest } from './rest.js'
+import type { ExperimentStatusValue, Pagination } from './validation.js'
+import { MAX_TREE_NODES } from './validation.js'
 
 /**
  * Acceso a datos de la API sobre PostgREST.

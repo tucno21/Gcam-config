@@ -1,4 +1,4 @@
-import { ApiError } from './http'
+import { ApiError } from './http.js'
 
 /**
  * Validación de entradas de la API. No se confía en el cliente: ids, límites,

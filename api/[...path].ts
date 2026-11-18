@@ -1,7 +1,7 @@
-import type { ApiRequest, ApiResponse } from './_lib/http'
-import { ApiError, sendError, sendJson, toApiError } from './_lib/http'
-import { authenticate } from './_lib/rest'
-import type { RequestContext } from './_lib/rest'
+import type { ApiRequest, ApiResponse } from './_lib/http.js'
+import { ApiError, sendError, sendJson, toApiError } from './_lib/http.js'
+import { authenticate } from './_lib/rest.js'
+import type { RequestContext } from './_lib/rest.js'
 import {
   applyConfigurationValue,
   createExperiment,
@@ -24,7 +24,7 @@ import {
   listVersionNodes,
   listVersions,
   updateExperimentResult,
-} from './_lib/db'
+} from './_lib/db.js'
 import {
   EXPERIMENT_STATUSES,
   parseActiveFilter,
@@ -37,8 +37,8 @@ import {
   optionalText,
   requiredText,
   valueMatchesType,
-} from './_lib/validation'
-import type { DataTypeValue } from './_lib/validation'
+} from './_lib/validation.js'
+import type { DataTypeValue } from './_lib/validation.js'
 
 /**
  * API segura para herramientas externas (OpenCode/MCP).

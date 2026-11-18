@@ -1,6 +1,6 @@
-import { SUPABASE_PUBLIC_KEY, SUPABASE_URL, isSupabaseConfigured } from './env'
-import { ApiError } from './http'
-import type { ApiRequest } from './http'
+import { SUPABASE_PUBLIC_KEY, SUPABASE_URL, isSupabaseConfigured } from './env.js'
+import { ApiError } from './http.js'
+import type { ApiRequest } from './http.js'
 
 /**
  * Cliente REST mínimo para la API (sin `supabase-js`).
