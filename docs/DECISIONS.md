@@ -705,6 +705,35 @@ poder eliminar una cámara con datos se añadió la función
 
 ---
 
+## D-040 — Borrado definitivo de un nivel o parámetro, con su historial
+
+**Fecha:** 2026-11-18 · **Estado:** vigente
+
+**Qué.** «Eliminar nivel» borra de verdad la rama: nodos, parámetros y los cambios de
+historial de esos parámetros. «Eliminar parámetro» hace lo mismo con un solo
+parámetro. El diálogo muestra el recuento antes de confirmar, incluidos los cambios
+de historial, y advierte de que no se puede deshacer. «Retirar» sigue disponible y es
+la opción que conserva todo.
+
+**Por qué.** Las claves foráneas son `restrict` y `authenticated` no puede borrar
+`parameter_changes`; el intento devolvía el mensaje genérico `23503`. El usuario
+necesita poder limpiar niveles creados por error sin que el historial lo impida.
+
+**Implicaciones.**
+
+- Migración 08: `public.delete_node_branch(uuid)` y `public.delete_parameter(uuid)`
+  (`security definer`, `search_path = ''`). Validan la propiedad con `auth.uid()`,
+  eliminan `configuration_values` heredados, el historial y los parámetros, y borran
+  los nodos hijos-primero para respetar la FK `restrict`.
+- `anon` no puede ejecutarlas y `authenticated` sí; el cliente sigue sin poder borrar
+  `parameter_changes` por su cuenta. Son, junto a `delete_camera`, los únicos caminos
+  que tocan el historial.
+- `describeBranch` cuenta `changes` para avisar en la confirmación.
+- `parameter_changes` sigue siendo **append-only para el cliente**: no se edita y no
+  se borra desde la interfaz salvo eliminando el parámetro o su rama.
+
+---
+
 ## D-039 — Interfaz de una sola vista: barra superior y cámaras en tarjetas
 
 **Fecha:** 2026-11-18 · **Estado:** vigente

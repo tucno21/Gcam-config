@@ -102,7 +102,12 @@ export const SettingsPage = () => {
   const [parameterDialog, setParameterDialog] = useState<ParameterDialogState>({ mode: 'closed' })
   const [valueTarget, setValueTarget] = useState<Parameter | null>(null)
   const [deletingLevel, setDeletingLevel] = useState<ParameterNode | null>(null)
-  const [describeLevel, setDescribeLevel] = useState<{ nodes: number; parameters: number } | null>(null)
+  const [describeLevel, setDescribeLevel] = useState<{
+    nodes: number
+    parameters: number
+    changes: number
+  } | null>(null)
+  const [describingLevel, setDescribingLevel] = useState(false)
   const [deletingParameter, setDeletingParameter] = useState<Parameter | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -114,10 +119,13 @@ export const SettingsPage = () => {
   const openDeleteLevel = async (node: ParameterNode) => {
     setDeletingLevel(node)
     setDescribeLevel(null)
+    setDescribingLevel(true)
     try {
       setDescribeLevel(await nodeService.describeBranch(node.id))
     } catch {
       setDescribeLevel(null)
+    } finally {
+      setDescribingLevel(false)
     }
   }
 
@@ -128,8 +136,10 @@ export const SettingsPage = () => {
       const result = await nodeService.removeBranch(deletingLevel.id)
       notify({
         title: 'Nivel eliminado',
-        description: `${deletingLevel.name}: ${result.nodes} ${result.nodes === 1 ? 'nivel' : 'niveles'} y ${result.parameters} ${
-          result.parameters === 1 ? 'parámetro' : 'parámetros'
+        description: `${deletingLevel.name}: ${result.nodes} ${result.nodes === 1 ? 'nivel' : 'niveles'}, ${
+          result.parameters
+        } ${result.parameters === 1 ? 'parámetro' : 'parámetros'} y ${result.changes} ${
+          result.changes === 1 ? 'cambio de historial' : 'cambios de historial'
         }.`,
         tone: 'success',
       })
@@ -150,16 +160,19 @@ export const SettingsPage = () => {
     if (!deletingParameter) return
     setBusy(true)
     try {
-      await parameterService.remove(deletingParameter.id)
-      notify({ title: 'Parámetro eliminado', description: deletingParameter.name, tone: 'success' })
+      const result = await parameterService.remove(deletingParameter.id)
+      notify({
+        title: 'Parámetro eliminado',
+        description:
+          result.changes > 0
+            ? `${deletingParameter.name} y ${result.changes} ${result.changes === 1 ? 'cambio' : 'cambios'} de historial.`
+            : deletingParameter.name,
+        tone: 'success',
+      })
       setDeletingParameter(null)
       parametersQuery.reload()
     } catch (cause) {
-      notify({
-        title: 'No se pudo eliminar',
-        description: `${toAppError(cause).message} Si ya tiene historial, retíralo en lugar de borrarlo.`,
-        tone: 'danger',
-      })
+      notify({ title: 'No se pudo eliminar', description: toAppError(cause).message, tone: 'danger' })
       setDeletingParameter(null)
     } finally {
       setBusy(false)
@@ -497,15 +510,20 @@ export const SettingsPage = () => {
             title="Eliminar nivel"
             confirmLabel="Eliminar"
             tone="danger"
-            loading={busy}
+            loading={busy || describingLevel}
           >
             Se eliminará <strong className="text-ink">{deletingLevel?.name}</strong> con todo su contenido.{' '}
             {describeLevel
-              ? `Incluye ${describeLevel.nodes} ${describeLevel.nodes === 1 ? 'nivel' : 'niveles'} y ${describeLevel.parameters} ${
-                  describeLevel.parameters === 1 ? 'parámetro' : 'parámetros'
-                } con su historial.`
-              : 'La base lo impedirá si tiene historial: en ese caso retíralo.'}{' '}
-            No se puede deshacer.
+              ? `Incluye ${describeLevel.nodes} ${describeLevel.nodes === 1 ? 'nivel' : 'niveles'} y ${
+                  describeLevel.parameters
+                } ${describeLevel.parameters === 1 ? 'parámetro' : 'parámetros'}${
+                  describeLevel.changes > 0
+                    ? `, y ${describeLevel.changes} ${
+                        describeLevel.changes === 1 ? 'cambio de historial que también se eliminará' : 'cambios de historial que también se eliminarán'
+                      }`
+                    : ', sin historial'
+                }. Esta acción no se puede deshacer.`
+              : 'Comprobando su contenido…'}
           </ConfirmDialog>
 
           <ConfirmDialog
@@ -517,8 +535,8 @@ export const SettingsPage = () => {
             tone="danger"
             loading={busy}
           >
-            Se eliminará <strong className="text-ink">{deletingParameter?.name}</strong>. Si ya tiene historial, la base
-            lo impedirá: retíralo para conservarlo.
+            Se eliminará <strong className="text-ink">{deletingParameter?.name}</strong> y su historial de cambios.
+            Esta acción no se puede deshacer.
           </ConfirmDialog>
         </>
       )}

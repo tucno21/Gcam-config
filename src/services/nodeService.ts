@@ -143,25 +143,38 @@ export const nodeService = {
     }
   },
 
-  /** Cuenta cuántos nodos y parámetros se perderían al borrar una rama. */
-  async describeBranch(nodeId: string): Promise<{ nodes: number; parameters: number }> {
+  /** Cuenta nodos, parámetros y cambios de historial que afectan a una rama. */
+  async describeBranch(nodeId: string): Promise<{ nodes: number; parameters: number; changes: number }> {
     try {
       const node = await this.getById(nodeId)
       const nodes = await fetchVersionNodes(node.cameraVersionId)
       const branchIds = collectBranchIds(nodes, nodeId)
 
       let parameters = 0
+      let changes = 0
       for (const ids of chunkIds(branchIds)) {
-        const { count, error } = await getSupabase()
+        const { data, count, error } = await getSupabase()
           .from('parameters')
-          .select('id', { count: 'exact', head: true })
+          .select('id', { count: 'exact' })
           .in('node_id', ids)
+          .returns<Array<{ id: string }>>()
 
         if (error) throw error
         parameters += count ?? 0
+
+        const parameterIds = (data ?? []).map((row) => row.id)
+        for (const chunk of chunkIds(parameterIds)) {
+          const { count: changeCount, error: changeError } = await getSupabase()
+            .from('parameter_changes')
+            .select('id', { count: 'exact', head: true })
+            .in('parameter_id', chunk)
+
+          if (changeError) throw changeError
+          changes += changeCount ?? 0
+        }
       }
 
-      return { nodes: branchIds.length, parameters }
+      return { nodes: branchIds.length, parameters, changes }
     } catch (error) {
       throw toAppError(error)
     }
@@ -272,46 +285,24 @@ export const nodeService = {
   },
 
   /**
-   * Borra una rama completa: primero los parámetros, luego los nodos de abajo
-   * hacia arriba. Devuelve cuántos registros se eliminaron para el resumen.
+   * Borra una rama completa con su historial mediante
+   * `public.delete_node_branch` (security definer): parámetros primero y luego
+   * los nodos de abajo hacia arriba. Devuelve cuántos registros se eliminaron.
    */
-  async removeBranch(nodeId: string): Promise<{ nodes: number; parameters: number }> {
+  async removeBranch(nodeId: string): Promise<{ nodes: number; parameters: number; changes: number }> {
     try {
-      const node = await this.getById(nodeId)
-      const nodes = await fetchVersionNodes(node.cameraVersionId)
-      const branchIds = collectBranchIds(nodes, nodeId)
-      const depth = new Map<string, number>()
+      const { data, error } = await getSupabase().rpc('delete_node_branch', { p_node_id: nodeId })
+      if (error) throw error
 
-      const byId = new Map(nodes.map((candidate) => [candidate.id, candidate]))
-      for (const id of branchIds) {
-        let current = byId.get(id)
-        let level = 0
-        while (current?.parentId && byId.has(current.parentId)) {
-          level += 1
-          current = byId.get(current.parentId)
-        }
-        depth.set(id, level)
+      const row = (Array.isArray(data) ? data[0] : data) as
+        | { deleted_nodes?: number; deleted_parameters?: number; deleted_changes?: number }
+        | null
+
+      return {
+        nodes: Number(row?.deleted_nodes ?? 0),
+        parameters: Number(row?.deleted_parameters ?? 0),
+        changes: Number(row?.deleted_changes ?? 0),
       }
-
-      let removedParameters = 0
-      for (const ids of chunkIds(branchIds)) {
-        const { error, count } = await getSupabase()
-          .from('parameters')
-          .delete({ count: 'exact' })
-          .in('node_id', ids)
-
-        if (error) throw error
-        removedParameters += count ?? 0
-      }
-
-      const levels = [...new Set(depth.values())].sort((a, b) => b - a)
-      for (const level of levels) {
-        const ids = [...depth.entries()].filter(([, value]) => value === level).map(([id]) => id)
-        const { error } = await getSupabase().from('parameter_nodes').delete().in('id', ids)
-        if (error) throw error
-      }
-
-      return { nodes: branchIds.length, parameters: removedParameters }
     } catch (error) {
       throw toAppError(error)
     }

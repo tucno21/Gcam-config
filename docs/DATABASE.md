@@ -278,13 +278,16 @@ Además de los `CHECK`, quedan garantizadas por la base estas reglas de negocio:
 | `cameras` → `camera_versions` | `restrict` | no perder historia; archivar |
 | `camera_versions` → `parameter_nodes` | `restrict` | borrado explícito del árbol |
 | `parameter_nodes` → `parameter_nodes` | `restrict` | subárbol explícito, sin cascadas |
-
-`public.delete_camera(uuid)` (D-038) es el único camino que borra historial: valida
-que la cámara es del usuario y elimina en orden hijos-primero.
 | `parameter_nodes` → `parameters` | `restrict` | evitar huérfanos silenciosos |
 | `configurations` → `configuration_values` | `cascade` | los valores no existen sin el perfil |
-| `experiments` → `parameter_changes` | `restrict` | historial intocable |
+| `experiments` → `parameter_changes` | `restrict` | historial ligado al experimento |
 | `*` → `ai_recommendations.*` | `set null` | la recomendación sobrevive como registro |
+
+`public.delete_node_branch(uuid)` (D-040) borra un nivel con su rama, parámetros e
+historial; `public.delete_parameter(uuid)` hace lo mismo con un parámetro;
+`public.delete_camera(uuid)` (D-038) borra la cámara completa. Las tres son
+`security definer`, validan la propiedad con `auth.uid()` y eliminan en orden
+hijos-primero. Son el único camino que toca `parameter_changes`.
 
 El borrado físico de cámaras/versiones solo se permite cuando no existen datos
 históricos; en caso contrario la UI ofrece **archivar** (`is_active = false`).
@@ -336,6 +339,9 @@ Orden actual (6 migraciones):
    notas e historial sin experimento (D-037).
 7. `20261118120700_delete_camera.sql` — `public.delete_camera(uuid)` para borrar una
    cámara con su estructura, valores e historial validando la propiedad (D-038).
+8. `20261118120800_delete_branch.sql` — `public.delete_node_branch(uuid)` y
+   `public.delete_parameter(uuid)` para borrar una rama o un parámetro con su
+   historial validando la propiedad (D-040).
 
 > `configurations`, `configuration_values` y `experiments` siguen existiendo y
 > mantienen sus políticas, pero **la interfaz ya no las usa** desde la Etapa 16

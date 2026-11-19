@@ -178,10 +178,18 @@ export const parameterService = {
   },
 
   /** Borra un parámetro sin historial asociado (si lo hay: `conflict` → retirar). */
-  async remove(id: string): Promise<void> {
+  /**
+   * Borra el parámetro y su historial mediante `public.delete_parameter`
+   * (security definer), que valida la propiedad antes de eliminar.
+   * Devuelve cuántos cambios de historial se eliminaron.
+   */
+  async remove(id: string): Promise<{ changes: number }> {
     try {
-      const { error } = await getSupabase().from('parameters').delete().eq('id', id)
+      const { data, error } = await getSupabase().rpc('delete_parameter', { p_parameter_id: id })
       if (error) throw error
+
+      const row = (Array.isArray(data) ? data[0] : data) as { deleted_changes?: number } | null
+      return { changes: Number(row?.deleted_changes ?? 0) }
     } catch (error) {
       throw toAppError(error)
     }

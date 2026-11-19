@@ -224,8 +224,9 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
 - `lineage_id` identifica el mismo nivel/parámetro entre cámaras duplicadas
   (sobrevive a renombrar y a duplicar la cámara).
 - `is_active = false` significa **retirado en esta versión**: se conserva con su
-  historial y se oculta salvo que se pidan los retirados. Nunca borrar lo que tiene
-  historial.
+  historial y se oculta salvo que se pidan los retirados. Borrar una rama o un
+  parámetro con historial es posible, pero solo con confirmación explícita de que se
+  pierde el historial (D-040); para conservarlo, se retira.
 - Invariantes que se validan antes de escribir:
   1. Un nodo no puede ser padre de sí mismo.
   2. Un nodo no puede moverse dentro de su propio subárbol (sin ciclos).
@@ -251,7 +252,8 @@ Reglas de capas (dirección permitida: `pages/features → hooks/stores → serv
   se observó). Es distinto del comentario de un cambio concreto.
 - `parameter_changes` es **append-only**: conserva valor anterior y nuevo (con su
   procedencia), comentario, efecto observado (`better`/`same`/`worse`/`unknown`),
-  fecha y una instantánea de la ruta. No se edita ni se borra.
+  fecha y una instantánea de la ruta. No se edita; solo se elimina si se borra el
+  parámetro o el nivel completo, con confirmación explícita (D-040).
 - Cambiar un valor **no** crea ni modifica perfiles: los perfiles se retiraron de la
   interfaz en la Etapa 16 (D-037).
 
@@ -435,12 +437,15 @@ Una etapa está terminada cuando:
 - **Interfaz de una sola vista** (D-039): sin «Inicio» ni menú lateral; `/` redirige a
   `/cameras`, la barra superior tiene marca, sesión y salida, y cada cámara es una
   tarjeta con acciones y globo de ayuda. Sin cambios de esquema ni de API.
+- **Borrado definitivo de ramas** (D-040): migración 08 con
+  `delete_node_branch(uuid)` y `delete_parameter(uuid)`, `security definer`, validadas
+  por propietario. «Eliminar» ya borra el historial de esa rama; «Retirar» lo conserva.
 - **Proyecto alojado** (`yyfgsvcngakunqwgaktb`, región `aws-1-us-east-1`): esquema
-  aplicado con **6 migraciones** registradas en `supabase_migrations.schema_migrations`,
+  aplicado con **8 migraciones** registradas en `supabase_migrations.schema_migrations`,
   incluida la de endurecimiento de privilegios (D-025), la marca `applied_to_profile`
-  del historial (D-031) y el espejo de ajustes (D-037). Verificado con el usuario
-  real: `anon` → `42501`, CRUD de extremo a extremo en verde y todos los bloqueos del
-  modelo activos. El acceso administrativo va por el pooler
+  del historial (D-031), el espejo de ajustes (D-037) y el borrado de ramas (D-040).
+  Verificado con el usuario real: `anon` → `42501`, CRUD de extremo a extremo en verde
+  y todos los bloqueos del modelo activos. El acceso administrativo va por el pooler
   `aws-1-us-east-1.pooler.supabase.com` porque el host directo solo tiene IPv6.
 - **Pendiente operativo**: configurar la URL del sitio en el panel
   (*Authentication → URL Configuration → Site URL*, p. ej. `http://localhost:5173`)

@@ -90,15 +90,18 @@ export const ParameterDetailPage = () => {
     if (!parameter) return
     setDeleteBusy(true)
     try {
-      await parameterService.remove(parameter.id)
-      notify({ title: 'Parámetro eliminado', description: parameter.name, tone: 'success' })
+      const result = await parameterService.remove(parameter.id)
+      notify({
+        title: 'Parámetro eliminado',
+        description:
+          result.changes > 0
+            ? `${parameter.name} y ${result.changes} ${result.changes === 1 ? 'cambio' : 'cambios'} de historial.`
+            : parameter.name,
+        tone: 'success',
+      })
       navigate(`/cameras/${cameraId ?? ''}/settings/${parameter.nodeId}`)
     } catch (cause) {
-      notify({
-        title: 'No se pudo eliminar',
-        description: `${toAppError(cause).message} Si ya tiene historial, retíralo en lugar de borrarlo.`,
-        tone: 'danger',
-      })
+      notify({ title: 'No se pudo eliminar', description: toAppError(cause).message, tone: 'danger' })
       setDeleteBusy(false)
       setConfirmingDelete(false)
     }
